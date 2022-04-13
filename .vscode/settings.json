@@ -1,0 +1,10 @@
+{
+    "solidity.compileUsingRemoteVersion": "v0.8.7+commit.e28d00a7",
+    "solidity.defaultCompiler": "remote",
+    "solidity.linter": "solium",
+    "solidity.soliumRules": {
+        "quotes": ["error", "double"],
+        "indentation": ["error", 4],
+        "linebreak-style": ["error", "unix"]
+    }
+}

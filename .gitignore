@@ -1,0 +1,12 @@
+node_modules
+.env
+coverage
+coverage.json
+typechain
+FirstPrivate.sol
+SecondPrivate.sol
+SeedSales.sol
+
+#Hardhat files
+cache
+artifacts

@@ -1,0 +1,31 @@
+{
+  "extends": "solium:recommended",
+  "plugins": [
+    "security"
+  ],
+  "rules": {
+    "security/detect-object-injection": "error",
+    "security/detect-non-literal-regexp": "error",
+    "security/detect-non-literal-require": "error",
+    "security/detect-non-literal-this": "error",
+    "security/detect-non-literal-fs-filename": "error",
+    "security/detect-non-literal-require-exception": "error",
+    "security/detect-non-literal-sprintf-argument": "error",
+    "security/detect-non-literal-tcp-port": "error",
+    "security/detect-non-literal-ws-fragment": "error",
+    "security/detect-non-literal-ws-host": "error",
+    "security/detect-non-literal-ws-origin": "error",
+    "security/detect-non-literal-ws-path": "error",
+    "security/detect-non-literal-ws-port": "error",
+    "security/detect-non-literal-ws-protocol": "error",
+    "security/detect-non-literal-ws-query": "error",
+    "security/detect-non-literal-ws-url": "error",
+    "security/detect-non-literal-xhr-header": "error",
+    "security/detect-non-literal-xhr-method": "error",
+    "security/detect-non-literal-xhr-url": "error",
+    "security/detect-non-literal-xhr-url-redirect": "error",
+    "security/detect-non-literal-xhr-url-redirect-allow-self": "error",
+    "security/detect-non-literal-xhr-url-redirect-allow-self-ref": "error"
+
+  }
+}
