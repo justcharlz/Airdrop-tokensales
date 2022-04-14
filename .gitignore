@@ -3,7 +3,6 @@ node_modules
 coverage
 coverage.json
 typechain
-FirstPrivate.sol
 SecondPrivate.sol
 SeedSales.sol
 
