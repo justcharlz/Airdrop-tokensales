@@ -15,12 +15,14 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     address internal receiverWallet = 0xE2B5B30f4c2Ee0A03e30e05DA32447D55E6dfa09;
     uint tokenPrice = 0.06 * 10**18;
     uint internal vestingPeriodCount;
+    uint256 count = 0;
 
-    mapping(address => bool) private crowdsaleWhitelist;
-    mapping(address => tokenHolder[]) private tokenHolders;
-    mapping(uint => tokenHolderVesting[5]) private vestingPeriod;
+    mapping(uint => tokenHolder) private crowdsaleWhitelist;
+    mapping(address => tokenHolder[]) public tokenHolders;
+    mapping(uint => tokenHolderVesting[5]) public vestingPeriod;
 
     struct tokenHolder{
+        address tokenHolder;
         uint tokenClaimable;
         bool vestingClaimed;
         uint vestingStart;
@@ -49,14 +51,8 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     }
 
     /** MODIFIER: Limits token transfer until the lockup period is over.*/
-    modifier canTransfer() {
-        if(!paused()) {
-            require(crowdsaleWhitelist[msg.sender],"you are not permitted to make transactions, not whitelisted");
-        }
-        _;
-    }
 
-    function buyGOCToken(uint _amount) public payable whenNotPaused {
+    function buyGOCToken(uint _amount) public payable whenNotPaused returns(bool){
         require(50 * 10**18 >= _amount && _amount <= 1500 * 10**18, "Amount must be between 50 and 1,500 BUSD");
         require(GOCToken.balanceOf(address(this)) > 0, 'Private Sales token is not available');
         require(GOCToken.balanceOf(msg.sender) <= 25000 * 10**18, 'You have already purchased approved tokens limit per wallet');
@@ -65,86 +61,102 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         uint amount = _amount * 10 ** 18;
         uint tokenCalculator = amount / tokenPrice;
         BUSD.transfer(receiverWallet, amount);
-        GOCToken.transfer(address(this), (tokenCalculator * 7/100)); // send 7% of the tokens to the buyer
+        GOCToken.transfer(msg.sender, (tokenCalculator * 7/100)); // send 7% of the tokens to the buyer
 
-        // if user is buying more token after initial purchase, get initial allowance
-        uint userAllowance = GOCToken.allowance(address(this), msg.sender);
-        if (userAllowance > 0) {
-            GOCToken.approve(msg.sender, 0);
-        }
-        GOCToken.approve(msg.sender, userAllowance + (tokenCalculator - tokenCalculator * 7/100)); // approve user to withdraw tokens
-
-        tokenHolder memory holder = tokenHolder(tokenCalculator, false, block.timestamp);
+        tokenHolder memory holder = tokenHolder(msg.sender, tokenCalculator, false, block.timestamp);
+        crowdsaleWhitelist[count] = holder;
         tokenHolders[msg.sender].push(holder);
+        count++;
 
+        return true;
     }
 
-    function claimToken() public whenNotPaused canTransfer nonReentrant {
-        require(tokenHolders[msg.sender].length > 0, 'You did not purchased any GOC tokens');
+    // function claimToken() public whenNotPaused canTransfer nonReentrant returns(bool) {
+    //     require(tokenHolders[msg.sender].length > 0, 'You did not purchased any GOC tokens');
 
-        for (uint256 i = 0; i < tokenHolders[msg.sender].length; i++) {
+    //     for (uint256 i = 0; i < tokenHolders[msg.sender].length; i++) {
       
-         if(tokenHolders[msg.sender][i].vestingStart + block.timestamp >= vestingPeriod[1][0].vestingEnd * 30 days) {
-             if(!tokenHolders[msg.sender][i].vestingClaimed && !vestingPeriod[1][0].released) {
-                 uint claimable = tokenHolders[msg.sender][i].tokenClaimable * vestingPeriod[1][0].releaseAmount;
-                 GOCToken.transfer(msg.sender, claimable);
-                 tokenHolders[msg.sender][i].vestingClaimed = true;
-             }
-        }
-        if(tokenHolders[msg.sender][i].vestingStart + block.timestamp >= vestingPeriod[2][1].vestingEnd * 30 days){
-         if(!tokenHolders[msg.sender][i].vestingClaimed && !vestingPeriod[2][1].released) {
-                 uint claimable = tokenHolders[msg.sender][i].tokenClaimable * vestingPeriod[2][1].releaseAmount;
-                 GOCToken.transfer(msg.sender, claimable);
-                 tokenHolders[msg.sender][i].vestingClaimed = true;
-             }
-        }
-        if(tokenHolders[msg.sender][i].vestingStart + block.timestamp >= vestingPeriod[3][2].vestingEnd * 30 days){
-         if(!tokenHolders[msg.sender][i].vestingClaimed && !vestingPeriod[3][2].released) {
-                 uint claimable = tokenHolders[msg.sender][i].tokenClaimable * vestingPeriod[3][2].releaseAmount;
-                 GOCToken.transfer(msg.sender, claimable);
-                 tokenHolders[msg.sender][i].vestingClaimed = true;
-             }
-        }
-        if(tokenHolders[msg.sender][i].vestingStart + block.timestamp >= vestingPeriod[4][3].vestingEnd * 30 days){
-         if(!tokenHolders[msg.sender][i].vestingClaimed && !vestingPeriod[4][3].released) {
-                 uint claimable = tokenHolders[msg.sender][i].tokenClaimable * vestingPeriod[4][3].releaseAmount;
-                 GOCToken.transfer(msg.sender, claimable);
-                 tokenHolders[msg.sender][i].vestingClaimed = true;
-             }
-        }
-        if(tokenHolders[msg.sender][i].vestingStart + block.timestamp >= vestingPeriod[5][4].vestingEnd * 30 days){
-         if(!tokenHolders[msg.sender][i].vestingClaimed && !vestingPeriod[5][4].released) {
-                 uint claimable = tokenHolders[msg.sender][i].tokenClaimable * vestingPeriod[5][4].releaseAmount;
-                 GOCToken.transfer(msg.sender, claimable);
-                 tokenHolders[msg.sender][i].vestingClaimed = true;
-             }
-        }
-    }
-    }
+    //      if(tokenHolders[msg.sender][i].vestingStart + block.timestamp >= vestingPeriod[1][0].vestingEnd * 30 days) {
+    //          if(!tokenHolders[msg.sender][i].vestingClaimed && !vestingPeriod[1][0].released) {
+    //              uint claimable = tokenHolders[msg.sender][i].tokenClaimable * vestingPeriod[1][0].releaseAmount;
+    //              GOCToken.transfer(msg.sender, claimable);
+    //              tokenHolders[msg.sender][i].vestingClaimed = true;
+    //          }
+    //     }
+    //     if(tokenHolders[msg.sender][i].vestingStart + block.timestamp >= vestingPeriod[2][1].vestingEnd * 30 days){
+    //      if(!tokenHolders[msg.sender][i].vestingClaimed && !vestingPeriod[2][1].released) {
+    //              uint claimable = tokenHolders[msg.sender][i].tokenClaimable * vestingPeriod[2][1].releaseAmount;
+    //              GOCToken.transfer(msg.sender, claimable);
+    //              tokenHolders[msg.sender][i].vestingClaimed = true;
+    //          }
+    //     }
+    //     if(tokenHolders[msg.sender][i].vestingStart + block.timestamp >= vestingPeriod[3][2].vestingEnd * 30 days){
+    //      if(!tokenHolders[msg.sender][i].vestingClaimed && !vestingPeriod[3][2].released) {
+    //              uint claimable = tokenHolders[msg.sender][i].tokenClaimable * vestingPeriod[3][2].releaseAmount;
+    //              GOCToken.transfer(msg.sender, claimable);
+    //              tokenHolders[msg.sender][i].vestingClaimed = true;
+    //          }
+    //     }
+    //     if(tokenHolders[msg.sender][i].vestingStart + block.timestamp >= vestingPeriod[4][3].vestingEnd * 30 days){
+    //      if(!tokenHolders[msg.sender][i].vestingClaimed && !vestingPeriod[4][3].released) {
+    //              uint claimable = tokenHolders[msg.sender][i].tokenClaimable * vestingPeriod[4][3].releaseAmount;
+    //              GOCToken.transfer(msg.sender, claimable);
+    //              tokenHolders[msg.sender][i].vestingClaimed = true;
+    //          }
+    //     }
+    //     if(tokenHolders[msg.sender][i].vestingStart + block.timestamp >= vestingPeriod[5][4].vestingEnd * 30 days){
+    //      if(!tokenHolders[msg.sender][i].vestingClaimed && !vestingPeriod[5][4].released) {
+    //              uint claimable = tokenHolders[msg.sender][i].tokenClaimable * vestingPeriod[5][4].releaseAmount;
+    //              GOCToken.transfer(msg.sender, claimable);
+    //              tokenHolders[msg.sender][i].vestingClaimed = true;
+    //          }
+    //     }
+    // }
+    // return true;
+    // }
 
     /**
      * @dev Allows the owner to release the specified amount of tokens to the specified beneficiary.
      * @param _unlockSchedule The index unlock schedule of token(1,2,3,4,5).
-     * @param _vestingMonths The token release month which will be multiplied by 30 days (1mth, 2mth, 3mth, 4mth, 5mth).
-     * @param _releaseAmount The token release amount(5, 8, 10, 30, 40).
+     * @param _index The index of the token to release(0,1,2,3,4).
+     * @param _vestingMonths The token release month (1mth, 2mth, 3mth, 4mth, 5mth).
+     * @param _releaseAmount The token percentage release amount(5, 8, 10, 30, 40).
      */
-    function createVestingPeriod(uint _unlockSchedule, uint _vestingMonths, uint _releaseAmount) public onlyOwner {
-        require(vestingPeriodCount < 5, "Vesting period limit reached");
+    function setVestingPeriod(uint _unlockSchedule,uint _index, uint _vestingMonths, uint _releaseAmount) public onlyOwner returns (bool) {
+        require(_unlockSchedule <= 5, "Invalid unlock schedule");
+        require(_index <= 4, "Invalid index");
         require(_vestingMonths > block.timestamp, "Vesting period cannot be in the past");
         require(_releaseAmount > 0, "Vesting amount cannot be 0");
         uint releaseAmount = _releaseAmount / 100;
-        tokenHolderVesting memory vesting = tokenHolderVesting(_vestingMonths, releaseAmount, false);
-        vestingPeriod[_unlockSchedule][0] = vesting;
+  
+        vestingPeriod[_unlockSchedule][_index].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
+        vestingPeriod[_unlockSchedule][_index].releaseAmount = releaseAmount;
+        vestingPeriod[_unlockSchedule][_index].released = false;
         vestingPeriodCount++;
+        
+        return true;
     }
 
-    /*release tokens to the token holders
+    /**
+    * @dev release tokens to the token holders
     * @param _unlockSchedule The index unlock schedule of token(1,2,3,4,5).
+    * @param _index The index of the token to release(0,1,2,3,4).
     */
-    function releaseToken(uint _unlockSchedule) public onlyOwner {
+    function releaseToken(uint _unlockSchedule,uint _index) public onlyOwner returns(bool){
         require(vestingPeriodCount > 0, "Vesting period not created");
 
-        vestingPeriod[_unlockSchedule][0].released = true;
+        vestingPeriod[_unlockSchedule][_index].released = true;
+
+        for (uint256 index = 0; index < count; index++) {
+        address user = crowdsaleWhitelist[index].tokenHolder;
+        uint oldAllowance = GOCToken.allowance(address(this), user);
+        if (oldAllowance > 0) {
+            GOCToken.approve(user, 0);
+        }
+        GOCToken.approve(msg.sender, oldAllowance + (crowdsaleWhitelist[index].tokenClaimable - crowdsaleWhitelist[index].tokenClaimable * 7/100)); // approve user to withdraw tokens
+        }
+
+        return true;
     }
 
       // Private Sales Status
@@ -153,17 +165,18 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     }
 
     // Pause Private Sales
-    function pausePrivateSales() public onlyOwner {
+    function pausePrivateSales() public onlyOwner  returns(bool){
         if(!paused()) {
             _pause();
         }
-        
+        return true;
     }
 
     // Unpause Private Sales
-    function unpausePrivateSales() public onlyOwner {
+    function unpausePrivateSales() public onlyOwner returns(bool) {
        if(paused()) {
             _unpause();
         }
+        return true;
     }
 }

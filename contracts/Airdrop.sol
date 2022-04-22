@@ -64,9 +64,9 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         airdropped[count].claimer = msg.sender;
         airdropped[count].amount = claimAirdrop;
         airdropped[count].approved = false;
+        airdrop memory A = airdropped[count];
         count++;
-        airdrop memory A = airdropped[airdropAddresses.current()];
-
+        
         return (A);
 
     }
