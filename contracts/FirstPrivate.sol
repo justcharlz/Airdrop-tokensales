@@ -57,7 +57,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
     /** MODIFIER: Limits token transfer until the lockup period is over.*/
 
-    function buyGOCToken(uint _amount) public payable returns(bool){
+    function buyGOCToken(uint _amount) public payable {
         require(_amount >= 1 * 10**18, "BuyGOCToken: Amount is less than required purchase of 50 BUSD");
         require(_amount <= 1500 * 10**18, "BuyGOCToken: Amount is greater than maximum purchase of 1500 BUSD");
         require(GOCToken.balanceOf(address(this)) > 0, 'Private Sales token is not available');
@@ -73,7 +73,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         count++;
 
         emit TransferSent(address(this), msg.sender, tokenCalculator * 7/100);
-        return true;
+        emit TransferReceived(msg.sender, tokenCalculator * 7/100);
     }
 
     /**
@@ -103,7 +103,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     * @param _unlockSchedule The index unlock schedule of token(1,2,3,4,5).
     * @param _index The index of the token to release(0,1,2,3,4).
     */
-    function approveToken(uint _unlockSchedule,uint _index) public onlyOwner returns(bool){
+    function approveToken(uint _unlockSchedule,uint _index) public onlyOwner {
         require(vestingPeriodCount > 0, "Vesting period not created");
 
         for (uint256 index = 0; index < count; index++) {
@@ -117,7 +117,6 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         GOCToken.updateUserVesting(user, index, block.timestamp, vestingPeriod[_unlockSchedule][_index].vestingEnd);
         }
 
-        return true;
     }
 
     /**

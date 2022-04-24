@@ -81,17 +81,16 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         return users;
     }
 
-    function approveAirdrop(uint _vestingMonths) public  whenNotPaused nonReentrant onlyOwner returns(bool) {
+    function approveAirdrop(uint _vestingMonths) public  whenNotPaused nonReentrant onlyOwner {
         uint256 total_ids = airdropAddresses.current();
         for (uint256 i = 0; i < total_ids; i++){
-            if(airdropped[i].approved == false && referrals[airdropped[i].claimer].length >= 1){
+            if(!airdropped[i].approved && referrals[airdropped[i].claimer].length >= 1){
                 uint256 reward = 200 * 10 ** 18;
                 GOCToken.approve(airdropped[i].claimer, airdropped[i].amount + reward);
                 airdropped[i].approved = true;
                 GOCToken.addTokenHolders(airdropped[i].claimer, airdropped[i].amount + reward, true, block.timestamp,  block.timestamp + (_vestingMonths * 86400 * 30));
             }
         }
-        return true;
     }
 
     // Referral airdrop tokens

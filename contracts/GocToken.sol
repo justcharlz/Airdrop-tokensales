@@ -24,7 +24,7 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
         uint arraylength = tokenHolders[msg.sender].length;
         for (uint256 index = 0; index < arraylength; index++) {
             if(tokenHolders[msg.sender][index].vestingEnd >=  block.timestamp){
-                require(tokenHolders[msg.sender][index].vestingRelease == true, "Spendable: Token not yet released");
+                require(tokenHolders[msg.sender][index].vestingRelease, "Spendable: Token not yet released");
                 require(balanceOf(msg.sender) >= _amount, "Spendable: Insufficient funds");
                 _;
             }
