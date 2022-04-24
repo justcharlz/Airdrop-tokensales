@@ -4,7 +4,9 @@ pragma solidity 0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-contract GocToken is Ownable, Pausable, ERC20{
+import "./interfaces/IGocToken.sol";
+
+contract GocToken is Ownable, Pausable, ERC20, IGocToken{
 
     mapping(address => tokenHolder[]) public tokenHolders;
  
@@ -34,7 +36,7 @@ contract GocToken is Ownable, Pausable, ERC20{
         _mint(msg.sender, _initialSupply * 10 ** 18);
     }
 
-    function addTokenHolders(address _tokenHolder, uint _tokenClaimable, uint _vestingStart, uint _vestingEnd) public onlyOwner override returns (bool) {
+    function addTokenHolders(address _tokenHolder, uint _tokenClaimable, uint _vestingStart, uint _vestingEnd) external onlyOwner override returns (bool) {
         require(_vestingEnd >= _vestingStart, "VestingCheck: Vesting end must be after start");
         require(_vestingEnd >= 0, "VestingCheck: Vesting end must be after current block timestamp or 0");
         require(_vestingStart >= 0, "VestingCheck: Vesting start must be after current block timestamp or 0");
@@ -59,11 +61,11 @@ contract GocToken is Ownable, Pausable, ERC20{
      function activateUserVesting(address _tokenHolder,uint _index, bool _status) public onlyOwner override returns (bool) {
         require(_tokenHolder != address(0), "VestingCheck: Token holder cannot be 0x0");
         require(tokenHolders[_tokenHolder].length > 0, "VestingCheck: Token holder does not exist");
-        tokenHolders[_tokenHolder][_index].vestingRelease = true;
+        tokenHolders[_tokenHolder][_index].vestingRelease = _status;
     return true;
     }
 
-    function transfer(address _to, uint256 _amount) public override spendable(_amount) returns (bool) {
+    function transfer(address _to, uint256 _amount) public override(ERC20, IERC20) spendable(_amount) returns (bool) {
         address ownerToken = _msgSender();
         _transfer(ownerToken, _to, _amount);
         return true;

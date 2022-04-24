@@ -81,15 +81,6 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         return users;
     }
 
-    // function withdrawAirdrop() public whenNotPaused nonReentrant returns (uint256) {
-    //     uint256 referred = referrals[msg.sender].length;
-
-    //     require(referred >= 1, "Airdrop: You have not referred the required number to claim token");
-    //     uint256 tokenAllowance = GOCToken.allowance(address(this), msg.sender);
-    //     GOCToken.transferFrom(address(this), msg.sender, tokenAllowance);
-    //     return tokenAllowance;
-    // }
-
     function approveAirdrop() public  whenNotPaused nonReentrant onlyOwner returns(bool) {
         uint256 total_ids = airdropAddresses.current();
         for (uint256 i = 0; i < total_ids; i++){

@@ -7,10 +7,11 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IGocToken.sol";
 
 contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
-    IERC20 GOCToken;
+    IGocToken GOCToken;
     IERC20 public immutable BUSD = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
     address internal receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
     uint tokenPrice = 0.06 * 10**18;
@@ -48,7 +49,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 // NOTE: All purchases will be made using BUSD BEP 20, the unlocking Month, Day and Time should have a manual impute.
 
     constructor(address _gocToken){
-        GOCToken = IERC20(_gocToken);
+        GOCToken = IGocToken(_gocToken);
     }
 
     event TransferReceived(address _from, uint256 _amount);
@@ -64,7 +65,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         require(BUSD.transferFrom(msg.sender, receiverWallet, _amount * 10 ** 18 / tokenPrice), "BuyGOCToken: Payment failed"); // collect payment and send token
         
         uint tokenCalculator = _amount * 10 ** 18 / tokenPrice;
-        GOCToken.transfer(msg.sender, (tokenCalculator * 7/100)); // send 7% of the tokens to the buyer
+        require(GOCToken.transfer(msg.sender, (tokenCalculator * 7/100)), "BuyGOCToken: Token transfer failed"); // send 7% of the tokens to the buyer
 
         tokenHolder memory holder = tokenHolder(msg.sender, tokenCalculator, false, 0, 0);
         crowdsaleWhitelist[count] = holder;
