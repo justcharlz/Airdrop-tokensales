@@ -49,7 +49,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
 
             //check airdrop remaining
             require(GOCToken.balanceOf(address(this)) > 0, "AirdropWhitelist: No airdrop remaining");
-            require(GOCToken.balanceOf(address(this)) <= 1000000 * 10 ** 18, "AirdropWhitelist: Provisioned Airdrop tokens have been claimed");
+            require(GOCToken.balanceOf(address(this)) <= 10 ** 6 * 10 ** 18, "AirdropWhitelist: Provisioned Airdrop tokens exceeded");
             claimAirdrop = 50 * 10 **18;
             airdropClaimWhitelist[msg.sender] = true;
             airdropAddresses.increment();

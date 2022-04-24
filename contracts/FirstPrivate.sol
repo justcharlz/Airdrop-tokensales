@@ -7,16 +7,17 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interfaces/IGocToken.sol";
+import "./interfaces/IgocToken.sol";
 
 contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
-    IGocToken GOCToken;
-    IERC20 public immutable BUSD = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
-    address internal receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
+    IgocToken gocToken;
+    IERC20 public immutable busd = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
+    address internal constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
     uint tokenPrice = 0.06 * 10**18;
     uint internal vestingPeriodCount;
     uint256 count = 0;
+    uint256 MAX_TOKEN_CAP = 3 * 10**6 * 10**18;
 
     mapping(uint => tokenHolder) private crowdsaleWhitelist;
     mapping(address => tokenHolder[]) public tokenHolders;
@@ -45,11 +46,11 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 // Unlocking Schedule - (93%) 1st Month 5%, 2nd 8%, 3rd 10%, 4th 30%, 5th 40%.
 // Pricing:
 // 1 GOW - $0.06
-// Minimum Purchase: $50 BUSD = 833.3 GOW Maximum Purchase: $1,500 BUSD = 25,000 GOW BUSD Receivers Wallet: 0xE2B5B30f4c2Ee0A03e30e05DA32447D55E6dfa09
-// NOTE: All purchases will be made using BUSD BEP 20, the unlocking Month, Day and Time should have a manual impute.
+// Minimum Purchase: $50 busd = 833.3 GOW Maximum Purchase: $1,500 busd = 25,000 GOW busd Receivers Wallet: 0xE2B5B30f4c2Ee0A03e30e05DA32447D55E6dfa09
+// NOTE: All purchases will be made using busd BEP 20, the unlocking Month, Day and Time should have a manual impute.
 
     constructor(address _gocToken){
-        GOCToken = IGocToken(_gocToken);
+        gocToken = IgocToken(_gocToken);
     }
 
     event TransferReceived(address indexed _from, uint256 _amount);
@@ -57,19 +58,20 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
     /** MODIFIER: Limits token transfer until the lockup period is over.*/
 
-    function buyGOCToken(uint _amount) public payable {
-        require(_amount >= 1 * 10**18, "BuyGOCToken: Amount is less than required purchase of 50 BUSD");
-        require(_amount <= 1500 * 10**18, "BuyGOCToken: Amount is greater than maximum purchase of 1500 BUSD");
-        require(GOCToken.balanceOf(address(this)) > 0, 'Private Sales token is not available');
-        require(GOCToken.balanceOf(msg.sender) <= 25000 * 10**18, 'You have already purchased approved tokens limit per wallet');
-        require(BUSD.transferFrom(msg.sender, receiverWallet, _amount * 10 ** 18 / tokenPrice), "BuyGOCToken: Payment failed"); // collect payment and send token
+    function buygocToken(uint _amount) public payable {
+        require(_amount >= 1 * 10**18, "BuygocToken: Amount is less than required purchase of 50 busd");
+        require(_amount <= 1500 * 10**18, "BuygocToken: Amount is greater than maximum purchase of 1500 busd");
+        require(MAX_TOKEN_CAP > 0, 'Private Sales token is not available');
+        require(gocToken.balanceOf(msg.sender) <= 25000 * 10**18, 'You have already purchased approved tokens limit per wallet');
+        require(busd.transferFrom(msg.sender, receiverWallet, _amount * 10 ** 18 / tokenPrice), "BuygocToken: Payment failed"); // collect payment and send token
         
         uint tokenCalculator = _amount * 10 ** 18 / tokenPrice;
-        require(GOCToken.transfer(msg.sender, (tokenCalculator * 7/100)), "BuyGOCToken: Token transfer failed"); // send 7% of the tokens to the buyer
+        require(gocToken.transfer(msg.sender, (tokenCalculator * 7/100)), "BuygocToken: Token transfer failed"); // send 7% of the tokens to the buyer
+        MAX_TOKEN_CAP -= tokenCalculator;
 
         tokenHolder memory holder = tokenHolder(msg.sender, tokenCalculator, false, 0, 0);
         crowdsaleWhitelist[count] = holder;
-        GOCToken.addTokenHolders(msg.sender, tokenCalculator, false, 0, 0);
+        gocToken.addTokenHolders(msg.sender, tokenCalculator, false, 0, 0);
         count++;
 
         emit TransferSent(address(this), msg.sender, tokenCalculator * 7/100);
@@ -108,13 +110,13 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
         for (uint256 index = 0; index < count; index++) {
         address user = crowdsaleWhitelist[index].tokenHolder;
-        uint256 oldAllowance = GOCToken.allowance(address(this), user);
+        uint256 oldAllowance = gocToken.allowance(address(this), user);
         if (oldAllowance > 0) {
-            GOCToken.approve(user, 0);
+            gocToken.approve(user, 0);
         }
         uint256 currAllowance = (crowdsaleWhitelist[index].tokenClaimable - crowdsaleWhitelist[index].tokenClaimable * 7/100) * vestingPeriod[_unlockSchedule][_index].releaseAmount;
-        GOCToken.approve(user, oldAllowance + currAllowance); // approve user to withdraw tokens
-        GOCToken.updateUserVesting(user, index, block.timestamp, vestingPeriod[_unlockSchedule][_index].vestingEnd);
+        gocToken.approve(user, oldAllowance + currAllowance); // approve user to withdraw tokens
+        gocToken.updateUserVesting(user, index, block.timestamp, vestingPeriod[_unlockSchedule][_index].vestingEnd);
         }
 
     }
@@ -129,18 +131,18 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
                for (uint256 index = 0; index < count; index++) {
         address user = crowdsaleWhitelist[index].tokenHolder;
         
-        GOCToken.activateUserVesting(user, index, true);
+        gocToken.activateUserVesting(user, index, true);
         }
         return true;
     }
 
     // Private Sales Status
-    function getPrivateSalesStatus() public view returns (bool) {
+    function getPrivateSalesStatus() external view returns (bool) {
         return paused();
     }
 
     // Pause Private Sales
-    function pausePrivateSales() public onlyOwner  returns(bool){
+    function pausePrivateSales() external onlyOwner  returns(bool){
         if(!paused()) {
             _pause();
         }
@@ -148,10 +150,14 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     }
 
     // Unpause Private Sales
-    function unpausePrivateSales() public onlyOwner returns(bool) {
+    function unpausePrivateSales() external onlyOwner returns(bool) {
        if(paused()) {
             _unpause();
         }
         return true;
+    }
+
+    receive() external payable {
+        emit TransferReceived(msg.sender, msg.value);
     }
 }
