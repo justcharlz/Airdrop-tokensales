@@ -6,14 +6,14 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IGocToken.sol";
 
 contract Airdrop is Ownable, Pausable, ReentrancyGuard {
     using Counters for Counters.Counter;
     Counters.Counter private airdropAddresses;
     Counters.Counter private countReferrals;
     
-    IERC20 GOCToken;
+    IGocToken GOCToken;
 
     uint256 internal claimAirdrop; 
     uint256 internal claimReferrals;
@@ -40,7 +40,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
     }
 
     constructor(address _gocToken){
-        GOCToken = IERC20(_gocToken);
+        GOCToken = IGocToken(_gocToken);
     }
 
     // Claim airdrop tokens
@@ -48,8 +48,8 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         require(!airdropClaimWhitelist[msg.sender], "AirdropWhitelist: You can't claim twice");
 
             //check airdrop remaining
-            require(GOCToken.balanceOf(address(this)) > 0, 'No airdrop remaining');
-            require(GOCToken.balanceOf(address(this)) <= 1000000 * 10 ** 18, 'Provisioned Airdrop tokens have been claimed');
+            require(GOCToken.balanceOf(address(this)) > 0, "AirdropWhitelist: No airdrop remaining");
+            require(GOCToken.balanceOf(address(this)) <= 1000000 * 10 ** 18, "AirdropWhitelist: Provisioned Airdrop tokens have been claimed");
             claimAirdrop = 50 * 10 **18;
             airdropClaimWhitelist[msg.sender] = true;
             airdropAddresses.increment();
@@ -81,13 +81,14 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         return users;
     }
 
-    function approveAirdrop() public  whenNotPaused nonReentrant onlyOwner returns(bool) {
+    function approveAirdrop(uint _vestingMonths) public  whenNotPaused nonReentrant onlyOwner returns(bool) {
         uint256 total_ids = airdropAddresses.current();
         for (uint256 i = 0; i < total_ids; i++){
             if(airdropped[i].approved == false && referrals[airdropped[i].claimer].length >= 1){
                 uint256 reward = 200 * 10 ** 18;
                 GOCToken.approve(airdropped[i].claimer, airdropped[i].amount + reward);
                 airdropped[i].approved = true;
+                GOCToken.addTokenHolders(airdropped[i].claimer, airdropped[i].amount + reward, true, block.timestamp,  block.timestamp + (_vestingMonths * 86400 * 30));
             }
         }
         return true;

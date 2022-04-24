@@ -52,7 +52,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         GOCToken = IGocToken(_gocToken);
     }
 
-    event TransferReceived(address _from, uint256 _amount);
+    event TransferReceived(address indexed _from, uint256 _amount);
     event TransferSent(address indexed _from, address indexed _destAddr, uint256 _amount);
 
     /** MODIFIER: Limits token transfer until the lockup period is over.*/
@@ -69,7 +69,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
         tokenHolder memory holder = tokenHolder(msg.sender, tokenCalculator, false, 0, 0);
         crowdsaleWhitelist[count] = holder;
-        GOCToken.addTokenHolders(msg.sender, tokenCalculator, 0, 0);
+        GOCToken.addTokenHolders(msg.sender, tokenCalculator, false, 0, 0);
         count++;
 
         emit TransferSent(address(this), msg.sender, tokenCalculator * 7/100);
