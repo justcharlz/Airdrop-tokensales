@@ -1,31 +1,70 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.7;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./interfaces/IFirstPrivate.sol";
-contract GocToken is ERC20{
-    IFirstPrivate public firstprivate;
+contract GocToken is Ownable, Pausable, ERC20{
+
+    mapping(address => tokenHolder[]) public tokenHolders;
+ 
+    struct tokenHolder{
+        address tokenHolder;
+        uint tokenClaimable;
+        bool vestingRelease;
+        uint vestingStart;
+        uint vestingEnd;
+    }
 
     //Modifier to check if it is spendable
     modifier spendable(uint256 _amount){
         /// checks account is in list of investors and can spend
-        uint arraylength = firstprivate.tokenHolders(msg.sender).length;
+        uint arraylength = tokenHolders[msg.sender].length;
         for (uint256 index = 0; index < arraylength; index++) {
-            require(firstprivate.tokenHolders(msg.sender)[index].tokenClaimable < _amount, "You do not have enough tokens to spend");
+            if(tokenHolders[msg.sender][index].vestingEnd >=  block.timestamp){
+                require(tokenHolders[msg.sender][index].tokenClaimable >= _amount, "Spendable: Insufficient funds");
+                _;
+            }
         }
-        
-        /// check vesting period
-        /// check account vesting period is over
         _;
     }
 
-    constructor(uint _initialSupply, address _firstprivate) ERC20("GOCToken", "GOC") {
+    constructor(uint _initialSupply) ERC20("GOCToken", "GOC") {
         _mint(msg.sender, _initialSupply * 10 ** 18);
-        firstprivate = IFirstPrivate(_firstprivate);
     }
 
-    function transferFrom(address _from, address _to, uint256 _amount) public override spendable(_amount) returns (bool) {
+    function addTokenHolders(address _tokenHolder, uint _tokenClaimable, uint _vestingStart, uint _vestingEnd) public onlyOwner override returns (bool) {
+        require(_vestingEnd >= _vestingStart, "VestingCheck: Vesting end must be after start");
+        require(_vestingEnd >= 0, "VestingCheck: Vesting end must be after current block timestamp or 0");
+        require(_vestingStart >= 0, "VestingCheck: Vesting start must be after current block timestamp or 0");
+        require(_tokenClaimable > 0, "VestingCheck: Token claimable must be greater than 0");
+        require(_tokenHolder != address(0), "VestingCheck: Token holder cannot be 0x0");
+        require(tokenHolders[_tokenHolder].length == 0, "VestingCheck: Token holder already exists");
+        tokenHolders[_tokenHolder].push(tokenHolder(_tokenHolder, _tokenClaimable, false, _vestingStart, _vestingEnd));
+    return true;
+    }
 
+    function updateUserVesting(address _tokenHolder,uint _index, uint _vestingStart, uint _vestingEnd) public onlyOwner override returns (bool) {
+        require(_vestingEnd >= _vestingStart, "VestingCheck: Vesting end must be after start");
+        require(_vestingEnd >= 0, "VestingCheck: Vesting end must be after current block timestamp or 0");
+        require(_vestingStart >= 0, "VestingCheck: Vesting start must be after current block timestamp or 0");
+        require(_tokenHolder != address(0), "VestingCheck: Token holder cannot be 0x0");
+        require(tokenHolders[_tokenHolder].length > 0, "VestingCheck: Token holder does not exist");
+        tokenHolders[_tokenHolder][_index].vestingStart = _vestingStart;
+        tokenHolders[_tokenHolder][_index].vestingEnd = _vestingEnd;
+    return true;
+    }
+
+     function activateUserVesting(address _tokenHolder,uint _index, bool _status) public onlyOwner override returns (bool) {
+        require(_tokenHolder != address(0), "VestingCheck: Token holder cannot be 0x0");
+        require(tokenHolders[_tokenHolder].length > 0, "VestingCheck: Token holder does not exist");
+        tokenHolders[_tokenHolder][_index].vestingRelease = true;
+    return true;
+    }
+
+    function transfer(address _to, uint256 _amount) public override spendable(_amount) returns (bool) {
+        address ownerToken = _msgSender();
+        _transfer(ownerToken, _to, _amount);
         return true;
     }
 }
