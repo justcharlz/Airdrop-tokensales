@@ -6,18 +6,19 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "./interfaces/IGocToken.sol";
+import "./interfaces/IgocToken.sol";
 
 contract Airdrop is Ownable, Pausable, ReentrancyGuard {
     using Counters for Counters.Counter;
     Counters.Counter private airdropAddresses;
     Counters.Counter private countReferrals;
     
-    IGocToken GOCToken;
+    IgocToken gocToken;
 
     uint256 internal claimAirdrop; 
     uint256 internal claimReferrals;
     uint256 count = 0;
+    uint256 MAX_TOKEN_CAP = 1 * 10**6 * 10**18;
 
     mapping(uint256 => airdrop) private airdropped;
     mapping(address => bool) public airdropClaimWhitelist;
@@ -40,7 +41,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
     }
 
     constructor(address _gocToken){
-        GOCToken = IGocToken(_gocToken);
+        gocToken = IgocToken(_gocToken);
     }
 
     // Claim airdrop tokens
@@ -48,8 +49,8 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         require(!airdropClaimWhitelist[msg.sender], "AirdropWhitelist: You can't claim twice");
 
             //check airdrop remaining
-            require(GOCToken.balanceOf(address(this)) > 0, "AirdropWhitelist: No airdrop remaining");
-            require(GOCToken.balanceOf(address(this)) <= 10 ** 6 * 10 ** 18, "AirdropWhitelist: Provisioned Airdrop tokens exceeded");
+            require(MAX_TOKEN_CAP > 0, "AirdropWhitelist: No airdrop remaining");
+            require(gocToken.balanceOf(address(this)) <= 1 * 10 ** 6 * 10 ** 18, "AirdropWhitelist: Provisioned Airdrop tokens exceeded");
             claimAirdrop = 50 * 10 **18;
             airdropClaimWhitelist[msg.sender] = true;
             airdropAddresses.increment();
@@ -58,6 +59,10 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         if(_referredBy != address(0)) {
             referrals[_referredBy].push(referral(msg.sender));
             countReferrals.increment();
+            uint checkReferral = referrals[_referredBy].length;
+            if(checkReferral >= 10){
+                MAX_TOKEN_CAP -= 250;
+            }
         }
 
         // whilelist user
@@ -86,9 +91,9 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         for (uint256 i = 0; i < total_ids; i++){
             if(!airdropped[i].approved && referrals[airdropped[i].claimer].length >= 1){
                 uint256 reward = 200 * 10 ** 18;
-                GOCToken.approve(airdropped[i].claimer, airdropped[i].amount + reward);
+                gocToken.approve(airdropped[i].claimer, airdropped[i].amount + reward);
                 airdropped[i].approved = true;
-                GOCToken.addTokenHolders(airdropped[i].claimer, airdropped[i].amount + reward, true, block.timestamp,  block.timestamp + _vestingMonths);
+                gocToken.addTokenHolders(airdropped[i].claimer, airdropped[i].amount + reward, true, block.timestamp,  block.timestamp + _vestingMonths);
                 // block.timestamp + (_vestingMonths * 86400 * 30));
             }
         }
@@ -101,7 +106,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
 
     // Airdrop token amounts balance
     function getAirdropBalance() public onlyOwner view returns (uint256) {
-        return GOCToken.balanceOf(address(this));
+        return gocToken.balanceOf(address(this));
     }
 
     // Airdrop Status
@@ -124,6 +129,5 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         }
     }
 }
-
 
 

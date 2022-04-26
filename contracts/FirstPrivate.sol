@@ -92,7 +92,8 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         require(_releaseAmount > 0, "Vesting amount cannot be 0");
         uint releaseAmount = _releaseAmount / 100;
   
-        vestingPeriod[_unlockSchedule][_index].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
+        vestingPeriod[_unlockSchedule][_index].vestingEnd = block.timestamp + (_vestingMonths);
+        // vestingPeriod[_unlockSchedule][_index].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
         vestingPeriod[_unlockSchedule][_index].releaseAmount = releaseAmount;
         vestingPeriod[_unlockSchedule][_index].released = false;
         vestingPeriodCount++;
