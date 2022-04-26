@@ -50,7 +50,7 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
         require(_vestingStart >= 0, "VestingCheck: Vesting start must be after current block timestamp or 0");
         require(_tokenClaimable > 0, "VestingCheck: Token claimable must be greater than 0");
         require(_tokenHolder != address(0), "VestingCheck: Token holder cannot be 0x0");
-        require(tokenHolders[_tokenHolder].length == 0, "VestingCheck: Token holder already exists");
+        // require(tokenHolders[_tokenHolder].length == 0, "VestingCheck: Token holder already exists");
         tokenHolders[_tokenHolder].push(tokenHolder(_tokenHolder, _tokenClaimable, _status, _vestingStart, _vestingEnd));
     return true;
     }

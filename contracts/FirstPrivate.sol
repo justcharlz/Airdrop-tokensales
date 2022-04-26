@@ -13,7 +13,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
     IgocToken gocToken;
     IERC20 public immutable busd = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
-    address internal constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
+    address public constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
     uint tokenPrice = 0.06 * 10**18;
     uint internal vestingPeriodCount;
     uint256 count = 0;
@@ -61,11 +61,11 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     function buygocToken(uint _amount) public payable {
         require(_amount >= 1 * 10**18, "BuygocToken: Amount is less than required purchase of 50 busd");
         require(_amount <= 1500 * 10**18, "BuygocToken: Amount is greater than maximum purchase of 1500 busd");
-        require(MAX_TOKEN_CAP > 0, 'Private Sales token is not available');
-        require(gocToken.balanceOf(msg.sender) <= 25000 * 10**18, 'You have already purchased approved tokens limit per wallet');
-        require(busd.transferFrom(msg.sender, receiverWallet, _amount * 10 ** 18 / tokenPrice), "BuygocToken: Payment failed"); // collect payment and send token
+        require(MAX_TOKEN_CAP > 0, "Private Sales token is not available");
+        require(gocToken.balanceOf(msg.sender) <= 25000 * 10**18, "You have already purchased approved tokens limit per wallet");
+        require(busd.transferFrom(msg.sender, receiverWallet, _amount), "BuygocToken: Payment failed"); // collect payment and send token
         
-        uint tokenCalculator = _amount * 10 ** 18 / tokenPrice;
+        uint tokenCalculator = _amount / tokenPrice;
         require(gocToken.transfer(msg.sender, (tokenCalculator * 7/100)), "BuygocToken: Token transfer failed"); // send 7% of the tokens to the buyer
         MAX_TOKEN_CAP -= tokenCalculator;
 
