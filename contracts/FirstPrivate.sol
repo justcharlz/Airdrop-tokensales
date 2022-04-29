@@ -66,16 +66,16 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         require(busd.transferFrom(msg.sender, receiverWallet, _amount), "BuygocToken: Payment failed"); // collect payment and send token
         
         uint tokenCalculator = _amount / tokenPrice;
-        require(gocToken.transfer(msg.sender, (tokenCalculator * 7/100)), "BuygocToken: Token transfer failed"); // send 7% of the tokens to the buyer
+        require(gocToken.transfer(msg.sender, (tokenCalculator)), "BuygocToken: Token transfer failed"); // send 7% of the tokens to the buyer
         MAX_TOKEN_CAP -= tokenCalculator;
 
         tokenHolder memory holder = tokenHolder(msg.sender, tokenCalculator, false, 0, 0);
         crowdsaleWhitelist[count] = holder;
-        gocToken.addTokenHolders(msg.sender, tokenCalculator, false, 0, 0);
+        gocToken.addTokenHolders(msg.sender, tokenCalculator * 7/100, true, block.timestamp, block.timestamp);
         count++;
 
-        emit TransferSent(address(this), msg.sender, tokenCalculator * 7/100);
-        emit TransferReceived(msg.sender, tokenCalculator * 7/100);
+        emit TransferSent(address(this), msg.sender, tokenCalculator);
+        emit TransferReceived(msg.sender, tokenCalculator);
     }
 
     /**
@@ -111,12 +111,12 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
         for (uint256 index = 0; index < count; index++) {
         address user = crowdsaleWhitelist[index].tokenHolder;
-        uint256 oldAllowance = gocToken.allowance(address(this), user);
-        if (oldAllowance > 0) {
-            gocToken.approve(user, 0);
-        }
-        uint256 currAllowance = (crowdsaleWhitelist[index].tokenClaimable - crowdsaleWhitelist[index].tokenClaimable * 7/100) * vestingPeriod[_unlockSchedule][_index].releaseAmount;
-        gocToken.approve(user, oldAllowance + currAllowance); // approve user to withdraw tokens
+        // uint256 oldAllowance = gocToken.allowance(address(this), user);
+        // if (oldAllowance > 0) {
+        //     gocToken.approve(user, 0);
+        // }
+        // uint256 currAllowance = (crowdsaleWhitelist[index].tokenClaimable - crowdsaleWhitelist[index].tokenClaimable * 7/100) * vestingPeriod[_unlockSchedule][_index].releaseAmount;
+        // gocToken.approve(user, oldAllowance + currAllowance); // approve user to withdraw tokens
         gocToken.updateUserVesting(user, index, block.timestamp, vestingPeriod[_unlockSchedule][_index].vestingEnd);
         }
 

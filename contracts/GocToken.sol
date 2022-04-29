@@ -24,6 +24,7 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
         /// checks account is in list of investors and can spend
         uint arraylength = tokenHolders[msg.sender].length;
         for (uint256 index = 0; index < arraylength; index++) {
+            require(tokenHolders[msg.sender][index].tokenClaimable <= _amount, "Spendable: Not enough tokens to spend");
             require(tokenHolders[msg.sender][index].vestingEnd <=  block.timestamp, "Spendable: Vesting period still on");
             require(tokenHolders[msg.sender][index].vestingRelease, "Spendable: Token not yet released");
         }
