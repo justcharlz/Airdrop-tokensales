@@ -23,19 +23,19 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
     //Modifier to check if it is spendable
     modifier spendable(uint256 _amount){
         /// checks account is in list of investors and can spend
-        uint arraylength = tokenHolders[msg.sender].length;
-        uint256 amount;
+        uint arraylength = tokenHolders[_msgSender()].length;
+        uint256 amount = 0;
         for (uint256 index = 0; index < arraylength; index++) {
-            if(!tokenHolders[msg.sender][index].tokenClaimed){
-            require(tokenHolders[msg.sender][index].vestingEnd <=  block.timestamp, "Spendable: Vesting period still on");
-            require(tokenHolders[msg.sender][index].vestingRelease, "Spendable: Token not yet released");
+            if(!tokenHolders[_msgSender()][index].tokenClaimed){
+            require(tokenHolders[_msgSender()][index].vestingEnd <=  block.timestamp, "Spendable: Vesting period still on");
+            require(tokenHolders[_msgSender()][index].vestingRelease, "Spendable: Token not yet released");
             
-                amount += tokenHolders[msg.sender][index].tokenClaimable;
-                tokenHolders[msg.sender][index].tokenClaimable -= _amount;
+                amount += tokenHolders[_msgSender()][index].tokenClaimable;
+                tokenHolders[_msgSender()][index].tokenClaimable -= _amount;
                 require(_amount <= amount, "Spendable: Not enough tokens to spend");
             
-            if(tokenHolders[msg.sender][index].tokenClaimable <= 0){
-                tokenHolders[msg.sender][index].tokenClaimed = true;
+            if(tokenHolders[_msgSender()][index].tokenClaimable <= 0){
+                tokenHolders[_msgSender()][index].tokenClaimed = true;
             }
         }
         }

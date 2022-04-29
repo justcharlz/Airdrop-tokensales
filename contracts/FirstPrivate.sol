@@ -89,7 +89,6 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     function setVestingPeriod(uint _unlockSchedule,uint _index, uint _vestingMonths, uint _releaseAmount) public onlyOwner returns (bool) {
         require(_unlockSchedule <= 5, "Invalid unlock schedule");
         require(_index <= 4, "Invalid index");
-        require(_vestingMonths > block.timestamp, "Vesting period cannot be in the past");
         require(_releaseAmount > 0, "Vesting amount cannot be 0");
         uint releaseAmount = _releaseAmount / 100;
   
