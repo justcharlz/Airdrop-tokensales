@@ -93,7 +93,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
                 uint256 reward = 200 * 10 ** 18;
                 gocToken.approve(airdropped[i].claimer, airdropped[i].amount + reward);
                 airdropped[i].approved = true;
-                gocToken.addTokenHolders(airdropped[i].claimer, airdropped[i].amount + reward, true, block.timestamp,  block.timestamp + _vestingMonths);
+                gocToken.addTokenHolders(airdropped[i].claimer, airdropped[i].amount + reward, true, block.timestamp,  block.timestamp + _vestingMonths, false);
                 // block.timestamp + (_vestingMonths * 86400 * 30));
             }
         }

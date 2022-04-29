@@ -17,16 +17,27 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
         bool vestingRelease;
         uint vestingStart;
         uint vestingEnd;
+        bool tokenClaimed;
     }
 
     //Modifier to check if it is spendable
     modifier spendable(uint256 _amount){
         /// checks account is in list of investors and can spend
         uint arraylength = tokenHolders[msg.sender].length;
+        uint256 amount;
         for (uint256 index = 0; index < arraylength; index++) {
-            require(tokenHolders[msg.sender][index].tokenClaimable <= _amount, "Spendable: Not enough tokens to spend");
+            if(!tokenHolders[msg.sender][index].tokenClaimed){
             require(tokenHolders[msg.sender][index].vestingEnd <=  block.timestamp, "Spendable: Vesting period still on");
             require(tokenHolders[msg.sender][index].vestingRelease, "Spendable: Token not yet released");
+            
+                amount += tokenHolders[msg.sender][index].tokenClaimable;
+                tokenHolders[msg.sender][index].tokenClaimable -= _amount;
+                require(_amount <= amount, "Spendable: Not enough tokens to spend");
+            
+            if(tokenHolders[msg.sender][index].tokenClaimable <= 0){
+                tokenHolders[msg.sender][index].tokenClaimed = true;
+            }
+        }
         }
         _;
     }
@@ -45,14 +56,14 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
 
     }
 
-    function addTokenHolders(address _tokenHolder, uint _tokenClaimable, bool _status, uint _vestingStart, uint _vestingEnd) public adminAddress returns (bool) {
+    function addTokenHolders(address _tokenHolder, uint _tokenClaimable, bool _status, uint _vestingStart, uint _vestingEnd, bool _claimed) public adminAddress returns (bool) {
         require(_vestingEnd >= _vestingStart, "VestingCheck: Vesting end must be after start");
         require(_vestingEnd >= 0, "VestingCheck: Vesting end must be after current block timestamp or 0");
         require(_vestingStart >= 0, "VestingCheck: Vesting start must be after current block timestamp or 0");
         require(_tokenClaimable > 0, "VestingCheck: Token claimable must be greater than 0");
         require(_tokenHolder != address(0), "VestingCheck: Token holder cannot be 0x0");
         // require(tokenHolders[_tokenHolder].length == 0, "VestingCheck: Token holder already exists");
-        tokenHolders[_tokenHolder].push(tokenHolder(_tokenHolder, _tokenClaimable, _status, _vestingStart, _vestingEnd));
+        tokenHolders[_tokenHolder].push(tokenHolder(_tokenHolder, _tokenClaimable, _status, _vestingStart, _vestingEnd, _claimed));
     return true;
     }
 

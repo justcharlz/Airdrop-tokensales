@@ -72,7 +72,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
         tokenHolder memory holder = tokenHolder(msg.sender, tokenCalculator, false, 0, 0);
         crowdsaleWhitelist[count] = holder;
-        gocToken.addTokenHolders(msg.sender, tokenCalculator * 7/100, true, block.timestamp, block.timestamp);
+        gocToken.addTokenHolders(msg.sender, tokenCalculator * 7/100, true, block.timestamp, block.timestamp, false);
         count++;
 
         emit TransferSent(address(this), msg.sender, tokenCalculator);
