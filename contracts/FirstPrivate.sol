@@ -121,7 +121,11 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     * @param _index The index of the token to release(0,1,2,3,4).
     */
     function releaseVestedToken(uint _unlockSchedule, uint _index) public onlyOwner returns(bool){
-              vestingPeriod[_unlockSchedule][_index].released = true;
+        vestingPeriod[_unlockSchedule][_index].released = true;
+        for (uint256 index = 0; index < count; index++) {
+        address user = crowdsaleWhitelist[index].tokenHolder;
+        gocToken.activateUserVesting( user, _index, true);
+        }
 
         return true;
     }
