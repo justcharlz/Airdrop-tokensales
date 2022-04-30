@@ -111,9 +111,8 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         for (uint256 index = 0; index < count; index++) {
         address user = crowdsaleWhitelist[index].tokenHolder;
         uint256 tokenCalculator = crowdsaleWhitelist[index].tokenClaimable * vestingPeriod[_unlockSchedule][_index].releaseAmount / 100;
-        gocToken.addTokenHolders(user, tokenCalculator, true, block.timestamp, vestingPeriod[_unlockSchedule][_index].vestingEnd, false);
+        gocToken.addTokenHolders(user, tokenCalculator, false, block.timestamp, vestingPeriod[_unlockSchedule][_index].vestingEnd, false);
         }
-
     }
 
     /**
