@@ -20,7 +20,6 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     uint256 MAX_TOKEN_CAP = 3 * 1e6 * 1e17;
 
     mapping(uint => tokenHolder) private crowdsaleWhitelist;
-    mapping(address => tokenHolder[]) public tokenHolders;
     mapping(uint => tokenHolderVesting[5]) public vestingPeriod;
 
     struct tokenHolder{
@@ -62,21 +61,21 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         require(_amount >= 1, "BuygocToken: Amount is less than required purchase of 50 busd");
         require(_amount <= 1500, "BuygocToken: Amount is greater than maximum purchase of 1500 busd");
         require(MAX_TOKEN_CAP > 0, "Private Sales token is not available");
-        require(gocToken.balanceOf(msg.sender) <= 25000 * 10**18, "You have already purchased approved tokens limit per wallet");
+        require(gocToken.balanceOf(_msgSender()) <= 25000 * 10**18, "You have already purchased approved tokens limit per wallet");
         uint256 amount = _amount * 10**18;
-        require(busd.transferFrom(msg.sender, receiverWallet, amount), "BuygocToken: Payment failed"); // collect payment and send token
+        require(busd.transferFrom(_msgSender(), receiverWallet, amount), "BuygocToken: Payment failed"); // collect payment and send token
         
         uint tokenCalculator = amount * 1e17 / tokenPrice;
-        require(gocToken.transfer(msg.sender, tokenCalculator), "BuygocToken: Token transfer failed"); // send 7% of the tokens to the buyer
+        require(gocToken.transfer(_msgSender(), tokenCalculator), "BuygocToken: Token transfer failed"); // send 7% of the tokens to the buyer
         MAX_TOKEN_CAP -= tokenCalculator;
 
-        tokenHolder memory holder = tokenHolder(msg.sender, tokenCalculator, false, 0, 0);
+        tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false, 0, 0);
         crowdsaleWhitelist[count] = holder;
-        gocToken.addTokenHolders(msg.sender, tokenCalculator * 7/100, true, block.timestamp, block.timestamp, false);
+        gocToken.addTokenHolders(_msgSender(), tokenCalculator * 7/100, true, block.timestamp, block.timestamp, false);
         count++;
 
-        emit TransferSent(address(this), msg.sender, tokenCalculator);
-        emit TransferReceived(msg.sender, tokenCalculator);
+        emit TransferSent(address(this), _msgSender(), tokenCalculator);
+        emit TransferReceived(_msgSender(), tokenCalculator);
     }
 
     /**
@@ -111,13 +110,8 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
         for (uint256 index = 0; index < count; index++) {
         address user = crowdsaleWhitelist[index].tokenHolder;
-        // uint256 oldAllowance = gocToken.allowance(address(this), user);
-        // if (oldAllowance > 0) {
-        //     gocToken.approve(user, 0);
-        // }
-        // uint256 currAllowance = (crowdsaleWhitelist[index].tokenClaimable - crowdsaleWhitelist[index].tokenClaimable * 7/100) * vestingPeriod[_unlockSchedule][_index].releaseAmount;
-        // gocToken.approve(user, oldAllowance + currAllowance); // approve user to withdraw tokens
-        gocToken.updateUserVesting(user, index, block.timestamp, vestingPeriod[_unlockSchedule][_index].vestingEnd);
+        uint256 tokenCalculator = crowdsaleWhitelist[index].tokenClaimable * vestingPeriod[_unlockSchedule][_index].releaseAmount / 100;
+        gocToken.addTokenHolders(user, tokenCalculator, true, block.timestamp, vestingPeriod[_unlockSchedule][_index].vestingEnd, false);
         }
 
     }
@@ -129,11 +123,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     */
     function releaseVestedToken(uint _unlockSchedule, uint _index) public onlyOwner returns(bool){
               vestingPeriod[_unlockSchedule][_index].released = true;
-               for (uint256 index = 0; index < count; index++) {
-        address user = crowdsaleWhitelist[index].tokenHolder;
-        
-        gocToken.activateUserVesting(user, index, true);
-        }
+
         return true;
     }
 
@@ -159,6 +149,6 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     }
 
     receive() external payable {
-        emit TransferReceived(msg.sender, msg.value);
+        emit TransferReceived(_msgSender(), msg.value);
     }
 }

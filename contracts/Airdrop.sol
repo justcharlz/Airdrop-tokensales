@@ -36,7 +36,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
     }
 
     modifier checkVesting() {
-        require(msg.sender == owner());
+        require(_msgSender() == owner());
         _;
     }
 
@@ -46,18 +46,18 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
 
     // Claim airdrop tokens
     function airdropWhitelist(address _referredBy) public whenNotPaused nonReentrant returns(airdrop memory) {
-        require(!airdropClaimWhitelist[msg.sender], "AirdropWhitelist: You can't claim twice");
+        require(!airdropClaimWhitelist[_msgSender()], "AirdropWhitelist: You can't claim twice");
 
             //check airdrop remaining
             require(MAX_TOKEN_CAP > 0, "AirdropWhitelist: No airdrop remaining");
             require(gocToken.balanceOf(address(this)) <= 1 * 10 ** 6 * 10 ** 18, "AirdropWhitelist: Provisioned Airdrop tokens exceeded");
             claimAirdrop = 50 * 10 **18;
-            airdropClaimWhitelist[msg.sender] = true;
+            airdropClaimWhitelist[_msgSender()] = true;
             airdropAddresses.increment();
 
         // check referral address is set
         if(_referredBy != address(0)) {
-            referrals[_referredBy].push(referral(msg.sender));
+            referrals[_referredBy].push(referral(_msgSender()));
             countReferrals.increment();
             uint checkReferral = referrals[_referredBy].length;
             if(checkReferral >= 10){
@@ -66,7 +66,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         }
 
         // whilelist user
-        airdropped[count].claimer = msg.sender;
+        airdropped[count].claimer = _msgSender();
         airdropped[count].amount = claimAirdrop;
         airdropped[count].approved = false;
         airdrop memory A = airdropped[count];

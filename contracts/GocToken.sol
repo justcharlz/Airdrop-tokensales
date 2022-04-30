@@ -43,12 +43,12 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
     }
 
     modifier adminAddress(){
-        require(admins[msg.sender],"AdminAdresses: Address not admin");
+        require(admins[_msgSender()],"AdminAdresses: Address not admin");
         _;
     }
 
     constructor(uint _initialSupply) ERC20("GOCToken", "GOC") {
-        _mint(msg.sender, _initialSupply * 10 ** 18);
+        _mint(_msgSender(), _initialSupply * 10 ** 18);
     }
 
     function addAdmins(address _addr) public onlyOwner{
@@ -62,19 +62,7 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
         require(_vestingStart >= 0, "VestingCheck: Vesting start must be after current block timestamp or 0");
         require(_tokenClaimable > 0, "VestingCheck: Token claimable must be greater than 0");
         require(_tokenHolder != address(0), "VestingCheck: Token holder cannot be 0x0");
-        // require(tokenHolders[_tokenHolder].length == 0, "VestingCheck: Token holder already exists");
         tokenHolders[_tokenHolder].push(tokenHolder(_tokenHolder, _tokenClaimable, _status, _vestingStart, _vestingEnd, _claimed));
-    return true;
-    }
-
-    function updateUserVesting(address _tokenHolder,uint _index, uint _vestingStart, uint _vestingEnd) public adminAddress  returns (bool) {
-        require(_vestingEnd >= _vestingStart, "VestingCheck: Vesting end must be after start");
-        require(_vestingEnd >= 0, "VestingCheck: Vesting end must be after current block timestamp or 0");
-        require(_vestingStart >= 0, "VestingCheck: Vesting start must be after current block timestamp or 0");
-        require(_tokenHolder != address(0), "VestingCheck: Token holder cannot be 0x0");
-        require(tokenHolders[_tokenHolder].length > 0, "VestingCheck: Token holder does not exist");
-        tokenHolders[_tokenHolder][_index].vestingStart = _vestingStart;
-        tokenHolders[_tokenHolder][_index].vestingEnd = _vestingEnd;
     return true;
     }
 
