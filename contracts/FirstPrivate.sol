@@ -15,12 +15,12 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     IERC20 public immutable busd = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
     address public constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
     uint tokenPrice = 0.06 * 1e17;
-    uint internal vestingPeriodCount = 0;
-    uint256 count = 0;
+    uint public vestingPeriodCount = 0;
+    uint256 countBuyers = 0;
     uint256 MAX_TOKEN_CAP = 3 * 1e6 * 1e17;
 
     mapping(uint => tokenHolder) public crowdsaleWhitelist;
-    mapping(uint => tokenHolderVesting[5]) public vestingPeriod;
+    mapping(uint => tokenHolderVesting) public vestingPeriod;
 
     struct tokenHolder{
         address tokenHolder;
@@ -58,6 +58,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     /** MODIFIER: Limits token transfer until the lockup period is over.*/
 
     function buygocToken(uint256 _amount) public payable {
+        require(vestingPeriodCount > 0, "Vesting period not created");
         require(_amount >= 1, "BuygocToken: Amount is less than required purchase of 50 busd");
         require(_amount <= 1500, "BuygocToken: Amount is greater than maximum purchase of 1500 busd");
         require(MAX_TOKEN_CAP > 0, "Private Sales token is not available");
@@ -70,9 +71,14 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         MAX_TOKEN_CAP -= tokenCalculator;
 
         tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false, 0, 0);
-        crowdsaleWhitelist[count] = holder;
+        crowdsaleWhitelist[countBuyers] = holder;
         gocToken.addTokenHolders(_msgSender(), tokenCalculator * 7/100, true, block.timestamp, block.timestamp, false);
-        count++;
+
+        for(uint i = 0; i < vestingPeriodCount; i++) {
+        uint256 tokenRedeemable = tokenCalculator * vestingPeriod[i+1].releaseAmount / 100;
+        gocToken.addTokenHolders(_msgSender(), tokenRedeemable, false, block.timestamp, vestingPeriod[i+1].vestingEnd, false);
+        }
+        countBuyers++;
 
         emit TransferSent(address(this), _msgSender(), tokenCalculator);
         emit TransferReceived(_msgSender(), tokenCalculator);
@@ -81,49 +87,32 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     /**
      * @dev Allows the owner to release the specified amount of tokens to the specified beneficiary.
      * @param _unlockSchedule The vesting unlock schedule of token(1,2,3,4,5).
-     * @param _index The index of the token to release(0,1,2,3,4).
      * @param _vestingMonths The token vesting month (1, 2, 3, 4, 5).
      * @param _releaseAmount The token percentage release amount(5, 8, 10, 30, 40).
      */
-    function setVestingPeriod(uint _unlockSchedule,uint _index, uint _vestingMonths, uint _releaseAmount) public onlyOwner returns (bool) {
+    function setVestingPeriod(uint _unlockSchedule, uint _vestingMonths, uint _releaseAmount) public onlyOwner returns (bool) {
         require(_unlockSchedule <= 5, "Invalid unlock schedule");
-        require(_index <= 4, "Invalid index");
         require(_releaseAmount > 0, "Vesting amount cannot be 0");
   
-        vestingPeriod[_unlockSchedule][_index].vestingEnd = block.timestamp + (_vestingMonths);
-        // vestingPeriod[_unlockSchedule][_index].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
-        vestingPeriod[_unlockSchedule][_index].releaseAmount = _releaseAmount;
-        vestingPeriod[_unlockSchedule][_index].released = false;
+        vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths);
+        // vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
+        vestingPeriod[_unlockSchedule].releaseAmount = _releaseAmount;
+        vestingPeriod[_unlockSchedule].released = false;
         vestingPeriodCount++;
         
         return true;
     }
 
     /**
-    * @dev approve tokens to the token holders
-    * @param _unlockSchedule The index unlock schedule of token(1,2,3,4,5).
-    * @param _index The index of the token to release(0,1,2,3,4).
-    */
-    function approveToken(uint _unlockSchedule,uint _index) public onlyOwner {
-        require(vestingPeriodCount > 0, "Vesting period not created");
-
-        for (uint256 index = 0; index < count; index++) {
-        address user = crowdsaleWhitelist[index].tokenHolder;
-        uint256 tokenCalculator = crowdsaleWhitelist[index].tokenClaimable * vestingPeriod[_unlockSchedule][_index].releaseAmount / 100;
-        gocToken.addTokenHolders(user, tokenCalculator, false, block.timestamp, vestingPeriod[_unlockSchedule][_index].vestingEnd, false);
-        }
-    }
-
-    /**
     * @dev release vested token to buyers
     * @param _unlockSchedule The index unlock schedule of token(1,2,3,4,5).
-    * @param _index The index of the token to release(0,1,2,3,4).
     */
-    function releaseVestedToken(uint _unlockSchedule, uint _index) public onlyOwner returns(bool){
-        vestingPeriod[_unlockSchedule][_index].released = true;
-        for (uint256 index = 0; index < count; index++) {
-        address user = crowdsaleWhitelist[index].tokenHolder;
-        gocToken.activateUserVesting( user, _index, true);
+    function releaseVestedToken(uint _unlockSchedule) public onlyOwner returns(bool){
+        vestingPeriod[_unlockSchedule].released = true;
+        uint index = _unlockSchedule - 1;
+        for (uint256 i = 0; i < countBuyers; i++) {
+        address user = crowdsaleWhitelist[i].tokenHolder;
+        gocToken.activateUserVesting( user, index, true);
         }
 
         return true;
