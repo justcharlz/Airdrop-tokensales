@@ -15,11 +15,11 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     IERC20 public immutable busd = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
     address public constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
     uint tokenPrice = 0.06 * 1e17;
-    uint internal vestingPeriodCount;
+    uint internal vestingPeriodCount = 0;
     uint256 count = 0;
     uint256 MAX_TOKEN_CAP = 3 * 1e6 * 1e17;
 
-    mapping(uint => tokenHolder) private crowdsaleWhitelist;
+    mapping(uint => tokenHolder) public crowdsaleWhitelist;
     mapping(uint => tokenHolderVesting[5]) public vestingPeriod;
 
     struct tokenHolder{
@@ -89,11 +89,10 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         require(_unlockSchedule <= 5, "Invalid unlock schedule");
         require(_index <= 4, "Invalid index");
         require(_releaseAmount > 0, "Vesting amount cannot be 0");
-        uint releaseAmount = _releaseAmount / 100;
   
         vestingPeriod[_unlockSchedule][_index].vestingEnd = block.timestamp + (_vestingMonths);
         // vestingPeriod[_unlockSchedule][_index].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
-        vestingPeriod[_unlockSchedule][_index].releaseAmount = releaseAmount;
+        vestingPeriod[_unlockSchedule][_index].releaseAmount = _releaseAmount;
         vestingPeriod[_unlockSchedule][_index].released = false;
         vestingPeriodCount++;
         
