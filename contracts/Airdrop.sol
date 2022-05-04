@@ -6,14 +6,14 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "./interfaces/IgocToken.sol";
+import "./interfaces/IgowToken.sol";
 
 contract Airdrop is Ownable, Pausable, ReentrancyGuard {
     using Counters for Counters.Counter;
     Counters.Counter private airdropAddresses;
     Counters.Counter private countReferrals;
     
-    IgocToken gocToken;
+    IgowToken gowToken;
 
     uint256 internal claimAirdrop; 
     uint256 internal claimReferrals;
@@ -41,7 +41,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
     }
 
     constructor(address _gocToken){
-        gocToken = IgocToken(_gocToken);
+        gowToken = IgowToken(_gocToken);
     }
 
     // Claim airdrop tokens
@@ -50,7 +50,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
 
             //check airdrop remaining
             require(MAX_TOKEN_CAP > 0, "AirdropWhitelist: No airdrop remaining");
-            require(gocToken.balanceOf(address(this)) <= 1 * 10 ** 6 * 10 ** 18, "AirdropWhitelist: Provisioned Airdrop tokens exceeded");
+            require(gowToken.balanceOf(address(this)) <= 1 * 10 ** 6 * 10 ** 18, "AirdropWhitelist: Provisioned Airdrop tokens exceeded");
             claimAirdrop = 50 * 10 **18;
             airdropClaimWhitelist[_msgSender()] = true;
             airdropAddresses.increment();
@@ -91,9 +91,9 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         for (uint256 i = 0; i < total_ids; i++){
             if(!airdropped[i].approved && referrals[airdropped[i].claimer].length >= 1){
                 uint256 reward = 200 * 10 ** 18;
-                gocToken.approve(airdropped[i].claimer, airdropped[i].amount + reward);
+                gowToken.approve(airdropped[i].claimer, airdropped[i].amount + reward);
                 airdropped[i].approved = true;
-                gocToken.addTokenHolders(airdropped[i].claimer, airdropped[i].amount + reward, true, block.timestamp,  block.timestamp + _vestingMonths, false);
+                gowToken.addTokenHolders(airdropped[i].claimer, airdropped[i].amount + reward, true, block.timestamp,  block.timestamp + _vestingMonths, false);
                 // block.timestamp + (_vestingMonths * 86400 * 30));
             }
         }
@@ -106,7 +106,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
 
     // Airdrop token amounts balance
     function getAirdropBalance() public onlyOwner view returns (uint256) {
-        return gocToken.balanceOf(address(this));
+        return gowToken.balanceOf(address(this));
     }
 
     // Airdrop Status
