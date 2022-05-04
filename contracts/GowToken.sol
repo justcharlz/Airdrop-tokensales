@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract GocToken is Ownable, Pausable, IERC20, ERC20{
+contract GowToken is Ownable, Pausable, IERC20, ERC20{
 
     mapping(address => bool) public admins;
     mapping(address => tokenHolder[]) public tokenHolders;
@@ -27,6 +27,7 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
         uint256 amount = 0;
         for (uint256 index = 0; index < arraylength; index++) {
             if(!tokenHolders[_msgSender()][index].tokenClaimed){
+                if(tokenHolders[_msgSender()][index].vestingEnd > 0){
             require(tokenHolders[_msgSender()][index].vestingEnd <=  block.timestamp, "Spendable: Vesting period still on");
             require(tokenHolders[_msgSender()][index].vestingRelease, "Spendable: Token not yet released");
             
@@ -36,6 +37,9 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
             
             if(tokenHolders[_msgSender()][index].tokenClaimable <= 0){
                 tokenHolders[_msgSender()][index].tokenClaimed = true;
+            }else{
+                revert();
+            }
             }
         }
         }
@@ -47,7 +51,7 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
         _;
     }
 
-    constructor(uint _initialSupply) ERC20("GOCToken", "GOC") {
+    constructor(uint _initialSupply) ERC20("GOWToken", "GOW") {
         _mint(_msgSender(), _initialSupply * 10 ** 18);
     }
 
@@ -66,10 +70,11 @@ contract GocToken is Ownable, Pausable, IERC20, ERC20{
     return true;
     }
 
-     function activateUserVesting(address _tokenHolder,uint _index, bool _status) public adminAddress returns (bool) {
+     function activateUserVesting(address _tokenHolder,uint _index, uint _vestEnd, bool _status) public adminAddress returns (bool) {
         require(_tokenHolder != address(0), "VestingCheck: Token holder cannot be 0x0");
         require(tokenHolders[_tokenHolder].length > 0, "VestingCheck: Token holder does not exist");
         tokenHolders[_tokenHolder][_index].vestingRelease = _status;
+        tokenHolders[_tokenHolder][_index].vestingEnd = _vestEnd;
     return true;
     }
 

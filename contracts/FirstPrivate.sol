@@ -7,11 +7,11 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interfaces/IgocToken.sol";
+import "./interfaces/IgowToken.sol";
 
 contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
-    IgocToken gocToken;
+    IgowToken gowToken;
     IERC20 public immutable busd = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
     address public constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
     uint tokenPrice = 0.06 * 1e17;
@@ -36,20 +36,8 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         bool released;
     }
 
-// This contract will allow for instant distribution of all tokens purchased and time vesting of all tokens purchased, ie releasing a specified percentage of tokens within a specified time frame enabling the buyer to sell or transfer the released percentage; this also requires that all remaining private sales tokens in the buyers wallets cannot be sold or transferred until the next specified day/time of released..
-// Private sale One Contract:
-// Total Supply -
-// Full Unlocking Period - TGE -
-// 3,000,000 GOW 5 Months
-// 7%
-// Unlocking Schedule - (93%) 1st Month 5%, 2nd 8%, 3rd 10%, 4th 30%, 5th 40%.
-// Pricing:
-// 1 GOW - $0.06
-// Minimum Purchase: $50 busd = 833.3 GOW Maximum Purchase: $1,500 busd = 25,000 GOW busd Receivers Wallet: 0xE2B5B30f4c2Ee0A03e30e05DA32447D55E6dfa09
-// NOTE: All purchases will be made using busd BEP 20, the unlocking Month, Day and Time should have a manual impute.
-
-    constructor(address _gocToken){
-        gocToken = IgocToken(_gocToken);
+    constructor(address _gowToken){
+        gowToken = IgowToken(_gowToken);
     }
 
     event TransferReceived(address indexed _from, uint256 _amount);
@@ -57,26 +45,26 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
     /** MODIFIER: Limits token transfer until the lockup period is over.*/
 
-    function buygocToken(uint256 _amount) public payable {
+    function buygowToken(uint256 _amount) public payable {
         require(vestingPeriodCount > 0, "Vesting period not created");
-        require(_amount >= 1, "BuygocToken: Amount is less than required purchase of 50 busd");
-        require(_amount <= 1500, "BuygocToken: Amount is greater than maximum purchase of 1500 busd");
+        require(_amount >= 1, "BuygowToken: Amount is less than required purchase of 50 busd");
+        require(_amount <= 1500, "BuygowToken: Amount is greater than maximum purchase of 1500 busd");
         require(MAX_TOKEN_CAP > 0, "Private Sales token is not available");
-        require(gocToken.balanceOf(_msgSender()) <= 25000 * 10**18, "You have already purchased approved tokens limit per wallet");
+        require(gowToken.balanceOf(_msgSender()) <= 25000 * 10**18, "You have already purchased approved tokens limit per wallet");
         uint256 amount = _amount * 10**18;
-        require(busd.transferFrom(_msgSender(), receiverWallet, amount), "BuygocToken: Payment failed"); // collect payment and send token
+        require(busd.transferFrom(_msgSender(), receiverWallet, amount), "BuygowToken: Payment failed"); // collect payment and send token
         
         uint tokenCalculator = amount * 1e17 / tokenPrice;
-        require(gocToken.transfer(_msgSender(), tokenCalculator), "BuygocToken: Token transfer failed"); // send 7% of the tokens to the buyer
+        require(gowToken.transfer(_msgSender(), tokenCalculator), "BuygowToken: Token transfer failed"); // send 7% of the tokens to the buyer
         MAX_TOKEN_CAP -= tokenCalculator;
 
         tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false, 0, 0);
         crowdsaleWhitelist[countBuyers] = holder;
-        gocToken.addTokenHolders(_msgSender(), tokenCalculator * 7/100, true, block.timestamp, block.timestamp, false);
+        gowToken.addTokenHolders(_msgSender(), tokenCalculator * 7/100, true, block.timestamp, block.timestamp, false);
 
         for(uint i = 0; i < vestingPeriodCount; i++) {
         uint256 tokenRedeemable = tokenCalculator * vestingPeriod[i+1].releaseAmount / 100;
-        gocToken.addTokenHolders(_msgSender(), tokenRedeemable, false, block.timestamp, vestingPeriod[i+1].vestingEnd, false);
+        gowToken.addTokenHolders(_msgSender(), tokenRedeemable, false, block.timestamp, 0, false);
         }
         countBuyers++;
 
@@ -109,10 +97,9 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     */
     function releaseVestedToken(uint _unlockSchedule) public onlyOwner returns(bool){
         vestingPeriod[_unlockSchedule].released = true;
-        uint index = _unlockSchedule - 1;
         for (uint256 i = 0; i < countBuyers; i++) {
         address user = crowdsaleWhitelist[i].tokenHolder;
-        gocToken.activateUserVesting( user, index, true);
+        gowToken.activateUserVesting( user, _unlockSchedule, vestingPeriod[_unlockSchedule].vestingEnd, true);
         }
 
         return true;
