@@ -23,12 +23,6 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
         bool tokenClaimed;
     }
 
-    //Modifier to check if it is spendable
-    // modifier spendable(uint256 _amount){
-   
-    //     _;
-    // }
-
     modifier adminAddress(){
         require(admins[_msgSender()],"AdminAdresses: Address not admin");
         _;
