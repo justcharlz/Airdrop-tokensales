@@ -61,7 +61,7 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
     }
 
     function addTokenHolders(address _tokenHolder, uint _tokenClaimable, bool _status, uint _vestingStart, uint _vestingEnd, bool _claimed) public adminAddress returns (bool) {
-        require(_vestingEnd >= _vestingStart, "VestingCheck: Vesting end must be after start");
+        // require(_vestingEnd >= _vestingStart, "VestingCheck: Vesting end must be after start");
         require(_vestingEnd >= 0, "VestingCheck: Vesting end must be after current block timestamp or 0");
         require(_vestingStart >= 0, "VestingCheck: Vesting start must be after current block timestamp or 0");
         require(_tokenClaimable > 0, "VestingCheck: Token claimable must be greater than 0");
