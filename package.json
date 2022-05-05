@@ -1,5 +1,16 @@
 {
-  "name": "hardhat-project",
+  "name": "Airdrop-Token-Sales",
+  "version": "1.0.0",
+  "description": "To create airdrop of token and also do ICO, IDO, IEO or any token sales event with Token Generation/distribution for vesting of token to initial buyers. Also manually unlock token after vesting period is over",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justcharlz/Airdrop-tokensales"
+  },
+  "author": "Charles Okaformbah",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/justcharlz/Airdrop-tokensales/issues"
+  },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
