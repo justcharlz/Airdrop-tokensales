@@ -26,8 +26,6 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         address tokenHolder;
         uint tokenClaimable;
         bool vestingClaimed;
-        uint vestingStart;
-        uint vestingEnd;
     }
 
     struct tokenHolderVesting{
@@ -58,7 +56,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         require(gowToken.transfer(_msgSender(), tokenCalculator), "BuygowToken: Token transfer failed"); // send 7% of the tokens to the buyer
         MAX_TOKEN_CAP -= tokenCalculator;
 
-        tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false, 0, 0);
+        tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false);
         crowdsaleWhitelist[countBuyers] = holder;
         gowToken.addTokenHolders(_msgSender(), tokenCalculator * 7/100, true, block.timestamp, block.timestamp, false);
 
@@ -81,12 +79,15 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     function setVestingPeriod(uint _unlockSchedule, uint _vestingMonths, uint _releaseAmount) public onlyOwner returns (bool) {
         require(_unlockSchedule <= 5, "Invalid unlock schedule");
         require(_releaseAmount > 0, "Vesting amount cannot be 0");
+        
+        if(vestingPeriod[_unlockSchedule].releaseAmount == 0) { //to prevent misalignment of vesting period count
+           vestingPeriodCount++;
+        }
   
         vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths);
         // vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
         vestingPeriod[_unlockSchedule].releaseAmount = _releaseAmount;
         vestingPeriod[_unlockSchedule].released = false;
-        vestingPeriodCount++;
         
         return true;
     }
@@ -99,7 +100,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         vestingPeriod[_unlockSchedule].released = true;
         for (uint256 i = 0; i < countBuyers; i++) {
         address user = crowdsaleWhitelist[i].tokenHolder;
-        gowToken.activateUserVesting( user, _unlockSchedule, vestingPeriod[_unlockSchedule].vestingEnd, true);
+        gowToken.activateUserVesting( user, _unlockSchedule, block.timestamp, vestingPeriod[_unlockSchedule].vestingEnd, true);
         }
 
         return true;
