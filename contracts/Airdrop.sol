@@ -109,6 +109,15 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
         return gowToken.balanceOf(address(this));
     }
 
+    /**
+    * @notice refund unsold token back to Owner address
+    * @return balance unsold token balance
+    */
+    function returnAirdropBalToken() public onlyOwner returns(uint256 balance){
+        balance = gowToken.balanceOf(address(this));
+        gowToken.transfer(_msgSender(), balance);
+    }
+
     // Airdrop Status
     function getAirdropStatus() public view returns (bool) {
         return paused();

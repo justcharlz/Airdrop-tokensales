@@ -27,6 +27,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
     uint public vestingPeriodCount = 0;
     uint256 countBuyers = 0;
     uint256 MAX_TOKEN_CAP = 45 * 1e6 * 1e17;
+    uint currentTime = block.timestamp;
 
     mapping(uint => tokenHolder) public crowdsaleWhitelist;
     mapping(uint => tokenHolderVesting) public vestingPeriod;
@@ -39,6 +40,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
 
     struct tokenHolderVesting{
         uint vestingEnd;
+        uint currentTime;
         uint releaseAmount;
         bool released;
     }
@@ -62,12 +64,12 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
         require(busd.transferFrom(_msgSender(), receiverWallet, amount), "BuygowToken: Payment failed"); // collect payment and send token
         
         uint tokenCalculator = amount * 1e17 / tokenPrice;
-        require(gowToken.transfer(_msgSender(), tokenCalculator), "BuygowToken: Token transfer failed"); // send 7% of the tokens to the buyer
+        require(gowToken.transfer(_msgSender(), tokenCalculator), "BuygowToken: Token transfer failed"); 
         MAX_TOKEN_CAP -= tokenCalculator;
 
         tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false);
         crowdsaleWhitelist[countBuyers] = holder;
-        gowToken.addTokenHolders(_msgSender(), tokenCalculator * 5/100, true, block.timestamp, block.timestamp, false);
+        gowToken.addTokenHolders(_msgSender(), tokenCalculator * 5/100, true, block.timestamp, block.timestamp, false); // send 7% of the tokens to the buyer
 
         for(uint i = 0; i < vestingPeriodCount; i++) {
         uint256 tokenRedeemable = tokenCalculator * vestingPeriod[i+1].releaseAmount / 100;
@@ -86,7 +88,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
      * @param _releaseAmount The token percentage release amount(5, 8, 10, 30, 40).
      */
     function setVestingPeriod(uint _unlockSchedule, uint _vestingMonths, uint _releaseAmount) public onlyOwner returns (bool) {
-        require(_unlockSchedule <= 5, "Invalid unlock schedule");
+        require(_unlockSchedule <= 6, "Invalid unlock schedule");
         require(_releaseAmount > 0, "Vesting amount cannot be 0");
         
         if(vestingPeriod[_unlockSchedule].releaseAmount == 0) { //to prevent misalignment of vesting period count
@@ -113,6 +115,15 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
         }
 
         return true;
+    }
+
+    /**
+    * @notice refund unsold token back to Owner address
+    * @return balance unsold token balance
+    */
+    function returnUnsoldToken() public onlyOwner returns(uint256 balance){
+        balance = gowToken.balanceOf(address(this));
+        gowToken.transfer(_msgSender(), balance);
     }
 
     // Private Sales Status

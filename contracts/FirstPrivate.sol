@@ -106,6 +106,15 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         return true;
     }
 
+    /**
+    * @notice refund unsold token back to Owner address
+    * @return balance unsold token balance
+    */
+    function returnUnsoldToken() public onlyOwner returns(uint256 balance){
+        balance = gowToken.balanceOf(address(this));
+        gowToken.transfer(_msgSender(), balance);
+    }
+
     // Private Sales Status
     function getPrivateSalesStatus() external view returns (bool) {
         return paused();

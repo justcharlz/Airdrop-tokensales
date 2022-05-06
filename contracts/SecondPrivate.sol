@@ -65,12 +65,12 @@ contract SecondPrivate is Ownable, Pausable, ReentrancyGuard {
         require(busd.transferFrom(_msgSender(), receiverWallet, amount), "BuygowToken: Payment failed"); // collect payment and send token
         
         uint tokenCalculator = amount * 1e17 / tokenPrice;
-        require(gowToken.transfer(_msgSender(), tokenCalculator), "BuygowToken: Token transfer failed"); // send 7% of the tokens to the buyer
+        require(gowToken.transfer(_msgSender(), tokenCalculator), "BuygowToken: Token transfer failed"); 
         MAX_TOKEN_CAP -= tokenCalculator;
 
         tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false);
         crowdsaleWhitelist[countBuyers] = holder;
-        gowToken.addTokenHolders(_msgSender(), tokenCalculator * 10/100, true, block.timestamp, block.timestamp, false);
+        gowToken.addTokenHolders(_msgSender(), tokenCalculator * 10/100, true, block.timestamp, block.timestamp, false); // allow 10% of the tokens to the buyer
 
         for(uint i = 0; i < vestingPeriodCount; i++) {
         uint256 tokenRedeemable = tokenCalculator * vestingPeriod[i+1].releaseAmount / 100;
@@ -116,6 +116,15 @@ contract SecondPrivate is Ownable, Pausable, ReentrancyGuard {
         }
 
         return true;
+    }
+
+    /**
+    * @notice refund unsold token back to Owner address
+    * @return balance unsold token balance
+    */
+    function returnUnsoldToken() public onlyOwner returns(uint256 balance){
+        balance = gowToken.balanceOf(address(this));
+        gowToken.transfer(_msgSender(), balance);
     }
 
     // Private Sales Status
