@@ -73,10 +73,10 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
                 tokenHolders[_msgSender()][index].tokenClaimable -= _amount;
                 require(_amount <= amount, "Spendable: Not enough tokens to spend");
           
-            if(tokenHolders[_msgSender()][index].tokenClaimable <= 0){
+            // if(tokenHolders[_msgSender()][index].tokenClaimable <= 0){
                 tokenHolders[_msgSender()][index].tokenClaimed = true;
                 claimed = true;
-            }
+            // }
             spendable = true;
             
         }
