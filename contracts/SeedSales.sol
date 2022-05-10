@@ -27,7 +27,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
     uint public vestingPeriodCount = 0;
     uint256 countBuyers = 0;
     uint256 MAX_TOKEN_CAP = 45 * 1e6 * 1e17;
-    uint currentTime = block.timestamp;
+    uint public currentTime = block.timestamp;
 
     mapping(uint => tokenHolder) public crowdsaleWhitelist;
     mapping(uint => tokenHolderVesting) public vestingPeriod;
@@ -40,7 +40,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
 
     struct tokenHolderVesting{
         uint vestingEnd;
-        uint currentTime;
+        uint vestingCreated;
         uint releaseAmount;
         bool released;
     }
@@ -94,7 +94,8 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
         if(vestingPeriod[_unlockSchedule].releaseAmount == 0) { //to prevent misalignment of vesting period count
            vestingPeriodCount++;
         }
-  
+
+        vestingPeriod[_unlockSchedule].vestingCreated = block.timestamp;
         vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths);
         // vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
         vestingPeriod[_unlockSchedule].releaseAmount = _releaseAmount;

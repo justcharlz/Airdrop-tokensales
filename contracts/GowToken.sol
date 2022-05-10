@@ -1,6 +1,10 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.7;
 
+// 1) Double transaction on all contracts.
+// 2) fixed transaction amount on seed sales.
+// 3) lifting up restrictions on being able to participate in the next vesting without completely withdrawing the previous vesting.
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -9,7 +13,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract GowToken is Ownable, Pausable, IERC20, ERC20{
 
     bool internal spendable;
-    bool internal claimed; 
 
     mapping(address => bool) public admins;
     mapping(address => tokenHolder[]) public tokenHolders;
@@ -61,34 +64,46 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
              /// checks account is in list of investors and can spend
         uint arraylength = tokenHolders[_msgSender()].length;
         uint256 amount = 0;
+        uint remainingBal = 0;
 
         if(arraylength > 0){
+            
         for (uint256 index = 0; index < arraylength; index++) {
-            if(tokenHolders[_msgSender()][index].vestingEnd > 0 && !tokenHolders[_msgSender()][index].tokenClaimed){ 
-            // require(!tokenHolders[_msgSender()][index].tokenClaimed, "Spendable: Vesting period end date not set");
-            require(tokenHolders[_msgSender()][index].vestingEnd <=  block.timestamp, "Spendable: Vesting period still on");
-            require(tokenHolders[_msgSender()][index].vestingRelease, "Spendable: Token not yet released");
+            if(tokenHolders[_msgSender()][index].vestingEnd <=  block.timestamp && !tokenHolders[_msgSender()][index].tokenClaimed){
+                if(tokenHolders[_msgSender()][index].vestingRelease){
+                    amount = amount + tokenHolders[_msgSender()][index].tokenClaimable;
+                    if(_amount >= amount){
+                    remainingBal += _amount - tokenHolders[_msgSender()][index].tokenClaimable;
+                    tokenHolders[_msgSender()][index].tokenClaimable = 0;
+                    tokenHolders[_msgSender()][index].tokenClaimed = true;
+                    }else if(_amount <= amount){
+                        if(remainingBal > 0){
+                            tokenHolders[_msgSender()][index].tokenClaimable -= remainingBal;
+                        }else{
+                            tokenHolders[_msgSender()][index].tokenClaimable -= _amount;
+                        }   
+                    }
+            }
             
-                amount += tokenHolders[_msgSender()][index].tokenClaimable;
-                tokenHolders[_msgSender()][index].tokenClaimable -= _amount;
-                require(_amount <= amount, "Spendable: Not enough tokens to spend");
-          
-            // if(tokenHolders[_msgSender()][index].tokenClaimable <= 0){
-                tokenHolders[_msgSender()][index].tokenClaimed = true;
-                claimed = true;
-            // }
-            spendable = true;
-            
-        }
+        }  else{
+                spendable = true;
+            }       
+    }
+
+    if(_amount <= amount){
+        spendable = true;
+    }else if(_amount > amount && tokenHolders[_msgSender()][arraylength].vestingEnd <=  block.timestamp && tokenHolders[_msgSender()][arraylength].vestingRelease){
+        spendable = true;
     }
 }
     if(arraylength > 0 && spendable){
         _transfer(ownerToken, _to, _amount);
-        if(claimed) spendable = false;
+        // spendable = false;
     }else if(arraylength > 0 && !spendable){
-        revert();
+        require(spendable, "Spendable: Token not yet released or spendable");
+    }else{
+        _transfer(ownerToken, _to, _amount);
     }
-    _transfer(ownerToken, _to, _amount);
         
         return true;
     }
