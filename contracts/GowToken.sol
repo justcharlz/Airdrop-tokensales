@@ -73,32 +73,35 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
                 if(tokenHolders[_msgSender()][index].vestingRelease){
                     amount = amount + tokenHolders[_msgSender()][index].tokenClaimable;
                     if(_amount >= amount){
-                    remainingBal += _amount - tokenHolders[_msgSender()][index].tokenClaimable;
+                    remainingBal = remainingBal + _amount - tokenHolders[_msgSender()][index].tokenClaimable;
                     tokenHolders[_msgSender()][index].tokenClaimable = 0;
                     tokenHolders[_msgSender()][index].tokenClaimed = true;
                     }else if(_amount <= amount){
                         if(remainingBal > 0){
-                            tokenHolders[_msgSender()][index].tokenClaimable -= remainingBal;
+                            tokenHolders[_msgSender()][index].tokenClaimable = tokenHolders[_msgSender()][index].tokenClaimable - remainingBal;
                         }else{
-                            tokenHolders[_msgSender()][index].tokenClaimable -= _amount;
+                            tokenHolders[_msgSender()][index].tokenClaimable = tokenHolders[_msgSender()][index].tokenClaimable - _amount;
                         }   
                     }
             }
             
-        }  else{
-                spendable = true;
-            }       
+        }  
+        // else{
+        //         spendable = true;
+        //     }       
     }
 
     if(_amount <= amount){
         spendable = true;
-    }else if(_amount > amount && tokenHolders[_msgSender()][arraylength].vestingEnd <=  block.timestamp && tokenHolders[_msgSender()][arraylength].vestingRelease){
+    }else if(_amount > amount && tokenHolders[_msgSender()][arraylength-1].vestingEnd <=  block.timestamp && tokenHolders[_msgSender()][arraylength-1].vestingRelease){
+        spendable = true;
+    }
+    if(tokenHolders[_msgSender()][arraylength-1].tokenClaimed){
         spendable = true;
     }
 }
     if(arraylength > 0 && spendable){
         _transfer(ownerToken, _to, _amount);
-        // spendable = false;
     }else if(arraylength > 0 && !spendable){
         require(spendable, "Spendable: Token not yet released or spendable");
     }else{
