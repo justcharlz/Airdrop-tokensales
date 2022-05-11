@@ -54,18 +54,18 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
 
     /** MODIFIER: Limits token transfer until the lockup period is over.*/
 
-    function buygowToken(uint256 _amount) public payable {
+    function buygowToken(uint256 _amount) public payable whenNotPaused {
         require(vestingPeriodCount > 0, "Vesting period not created");
-        require(_amount >= 1, "BuygowToken: Amount is less than required purchase of 50 busd");
+        require(_amount >= 50, "BuygowToken: Amount is less than required purchase of 50 busd");
         require(_amount <= 1500, "BuygowToken: Amount is greater than maximum purchase of 1500 busd");
         require(MAX_TOKEN_CAP > 0, "Private Sales token is not available");
-        require(gowToken.balanceOf(_msgSender()) <= 25000 * 10**18, "You have already purchased approved tokens limit per wallet");
-        uint256 amount = _amount * 10**18;
+        require(gowToken.balanceOf(_msgSender()) <= 25000 * 1e17, "You have already purchased approved tokens limit per wallet");
+        uint256 amount = _amount * 1e17;
         require(busd.transferFrom(_msgSender(), receiverWallet, amount), "BuygowToken: Payment failed"); // collect payment and send token
         
         uint tokenCalculator = amount * 1e17 / tokenPrice;
         require(gowToken.transfer(_msgSender(), tokenCalculator), "BuygowToken: Token transfer failed"); 
-        MAX_TOKEN_CAP -= tokenCalculator;
+        MAX_TOKEN_CAP = MAX_TOKEN_CAP - tokenCalculator;
 
         tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false);
         crowdsaleWhitelist[countBuyers] = holder;
@@ -109,6 +109,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
     * @param _unlockSchedule The index unlock schedule of token(1,2,3,4,5).
     */
     function releaseVestedToken(uint _unlockSchedule) public onlyOwner returns(bool){
+        require(vestingPeriodCount <= _unlockSchedule, "ReleasaeSchedule: Schedule index not created");
         vestingPeriod[_unlockSchedule].released = true;
         for (uint256 i = 0; i < countBuyers; i++) {
         address user = crowdsaleWhitelist[i].tokenHolder;
@@ -128,12 +129,12 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
     }
 
     // Private Sales Status
-    function getPrivateSalesStatus() external view returns (bool) {
+    function getSeedSalesStatus() external view returns (bool) {
         return paused();
     }
 
     // Pause Private Sales
-    function pausePrivateSales() external onlyOwner  returns(bool){
+    function pauseSeedSales() external onlyOwner  returns(bool){
         if(!paused()) {
             _pause();
         }
@@ -141,7 +142,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
     }
 
     // Unpause Private Sales
-    function unpausePrivateSales() external onlyOwner returns(bool) {
+    function unpauseSeedSales() external onlyOwner returns(bool) {
        if(paused()) {
             _unpause();
         }
