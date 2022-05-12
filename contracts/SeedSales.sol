@@ -1,14 +1,5 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.7;
-
-// Total Supply - 4,500,000 GOW
-// Full Unlocking Period - TGE - 6 Months
-// Unlocking Schedule - 5% (95%) 1st Month 5%, 2nd 5%, 3rd 10%, 4th 15%, 5th 25%, 6th 35%.
-// Pricing:
-// 1 GOW - $0.04
-// Minimum Purchase: $2,000 busd = 50,000 GOW Maximum Purchase: $5,000 busd = 125,000 GOW busd BEP20 Receivers Wallet: 0x4bc1ba192B14aE42407F893194F67f36Be6A806d
-// NOTE: All purchases will be made using busd BEP 20, the unlocking Month, Day and Time should have a manual impute.
-// All remaining tokens after sales should be transferred automatically to the main wallet and free from the contract vasting so it can be reused, also a User Interface UI should be created to interact for the purchase of private sales tokens, seed sales token and airdrop tokens, and an Admin user interface to control the private sales functions and vasting.
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -20,7 +11,7 @@ import "./interfaces/IgowToken.sol";
 contract SeedSales is Ownable, Pausable, ReentrancyGuard {
 
     IgowToken gowToken;
-    IERC20 public immutable busd = IERC20(0xd9145CCE52D386f254917e481eB44e9943F39138);
+    IERC20 public immutable busd = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
     address public constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
     uint tokenPrice = 0.04 * 1e17;
     uint public vestingPeriodCount = 0;

@@ -1,6 +1,14 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.7;
 
+// Total Supply - 4,500,000 GOW
+// Full Unlocking Period - TGE - 6 Months
+// Unlocking Schedule - 5% (95%) 1st Month 5%, 2nd 5%, 3rd 10%, 4th 15%, 5th 25%, 6th 35%.
+// Pricing:
+// 1 GOW - $0.04
+// Minimum Purchase: $2,000 busd = 50,000 GOW Maximum Purchase: $5,000 busd = 125,000 GOW busd BEP20 Receivers Wallet: 0x4bc1ba192B14aE42407F893194F67f36Be6A806d
+// NOTE: All purchases will be made using busd BEP 20, the unlocking Month, Day and Time should have a manual impute.
+// All remaining tokens after sales should be transferred automatically to the main wallet and free from the contract vasting so it can be reused, also a User Interface UI should be created to interact for the purchase of private sales tokens, FirstPrivate sales token and airdrop tokens, and an Admin user interface to control the private sales functions and vasting.
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -27,9 +35,10 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         uint tokenClaimable;
         bool vestingClaimed;
     }
-
+    
     struct tokenHolderVesting{
         uint vestingEnd;
+        uint vestingCreated;
         uint releaseAmount;
         bool released;
     }
@@ -43,26 +52,26 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
     /** MODIFIER: Limits token transfer until the lockup period is over.*/
 
-    function buygowToken(uint256 _amount) public payable {
+    function buygowToken(uint256 _amount) public payable whenNotPaused {
         require(vestingPeriodCount > 0, "Vesting period not created");
-        require(_amount >= 1, "BuygowToken: Amount is less than required purchase of 50 busd");
+        require(_amount >= 50, "BuygowToken: Amount is less than required purchase of 50 busd");
         require(_amount <= 1500, "BuygowToken: Amount is greater than maximum purchase of 1500 busd");
         require(MAX_TOKEN_CAP > 0, "Private Sales token is not available");
-        require(gowToken.balanceOf(_msgSender()) <= 25000 * 10**18, "You have already purchased approved tokens limit per wallet");
-        uint256 amount = _amount * 10**18;
+        require(gowToken.balanceOf(_msgSender()) <= 25000 * 1e17, "You have already purchased approved tokens limit per wallet");
+        uint256 amount = _amount * 1e17;
         require(busd.transferFrom(_msgSender(), receiverWallet, amount), "BuygowToken: Payment failed"); // collect payment and send token
         
         uint tokenCalculator = amount * 1e17 / tokenPrice;
-        require(gowToken.transfer(_msgSender(), tokenCalculator), "BuygowToken: Token transfer failed"); // send 7% of the tokens to the buyer
-        MAX_TOKEN_CAP -= tokenCalculator;
+        require(gowToken.transfer(_msgSender(), tokenCalculator), "BuygowToken: Token transfer failed"); 
+        MAX_TOKEN_CAP = MAX_TOKEN_CAP - tokenCalculator;
 
         tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false);
         crowdsaleWhitelist[countBuyers] = holder;
-        gowToken.addTokenHolders(_msgSender(), tokenCalculator * 7/100, true, block.timestamp, block.timestamp, false);
+        gowToken.firstBuyTokenHolder(_msgSender(), tokenCalculator * 7/100, true, block.timestamp, block.timestamp, false); // send 7% of the tokens to the buyer
 
         for(uint i = 0; i < vestingPeriodCount; i++) {
         uint256 tokenRedeemable = tokenCalculator * vestingPeriod[i+1].releaseAmount / 100;
-        gowToken.addTokenHolders(_msgSender(), tokenRedeemable, false, block.timestamp, 0, false);
+        gowToken.addTokenHolders(_msgSender(), i+1, tokenRedeemable, false, block.timestamp, 0, false);
         }
         countBuyers++;
 
@@ -77,13 +86,14 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
      * @param _releaseAmount The token percentage release amount(5, 8, 10, 30, 40).
      */
     function setVestingPeriod(uint _unlockSchedule, uint _vestingMonths, uint _releaseAmount) public onlyOwner returns (bool) {
-        require(_unlockSchedule <= 5, "Invalid unlock schedule");
+        require(_unlockSchedule <= 6, "Invalid unlock schedule");
         require(_releaseAmount > 0, "Vesting amount cannot be 0");
         
         if(vestingPeriod[_unlockSchedule].releaseAmount == 0) { //to prevent misalignment of vesting period count
            vestingPeriodCount++;
         }
-  
+
+        vestingPeriod[_unlockSchedule].vestingCreated = block.timestamp;
         vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths);
         // vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
         vestingPeriod[_unlockSchedule].releaseAmount = _releaseAmount;
@@ -97,6 +107,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     * @param _unlockSchedule The index unlock schedule of token(1,2,3,4,5).
     */
     function releaseVestedToken(uint _unlockSchedule) public onlyOwner returns(bool){
+        require(_unlockSchedule <= vestingPeriodCount, "ReleasaeSchedule: Schedule index not created");
         vestingPeriod[_unlockSchedule].released = true;
         for (uint256 i = 0; i < countBuyers; i++) {
         address user = crowdsaleWhitelist[i].tokenHolder;
@@ -116,12 +127,12 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     }
 
     // Private Sales Status
-    function getPrivateSalesStatus() external view returns (bool) {
+    function getFirstPrivateSalesStatus() external view returns (bool) {
         return paused();
     }
 
     // Pause Private Sales
-    function pausePrivateSales() external onlyOwner  returns(bool){
+    function pauseFirstPrivateSales() external onlyOwner  returns(bool){
         if(!paused()) {
             _pause();
         }
@@ -129,7 +140,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
     }
 
     // Unpause Private Sales
-    function unpausePrivateSales() external onlyOwner returns(bool) {
+    function unpauseFirstPrivateSales() external onlyOwner returns(bool) {
        if(paused()) {
             _unpause();
         }
@@ -140,3 +151,4 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         emit TransferReceived(_msgSender(), msg.value);
     }
 }
+
