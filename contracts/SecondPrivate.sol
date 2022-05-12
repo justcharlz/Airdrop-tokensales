@@ -13,10 +13,10 @@ contract SecondPrivate is Ownable, Pausable, ReentrancyGuard {
     IgowToken gowToken;
     IERC20 public immutable busd = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
     address public constant receiverWallet = 0x21e4E034B607bbb84bb5548c521EA249A8Ee028F;
-    uint tokenPrice = 0.075 * 1e17;
+    uint tokenPrice = 0.075 * 1e18;
     uint public vestingPeriodCount = 0;
     uint256 countBuyers = 0;
-    uint256 MAX_TOKEN_CAP = 35 * 1e6 * 1e17;
+    uint256 MAX_TOKEN_CAP = 35 * 1e6 * 1e18;
 
     mapping(uint => tokenHolder) public crowdsaleWhitelist;
     mapping(uint => tokenHolderVesting) public vestingPeriod;
@@ -48,11 +48,11 @@ contract SecondPrivate is Ownable, Pausable, ReentrancyGuard {
         require(_amount >= 50, "BuygowToken: Amount is less than required purchase of 50 busd");
         require(_amount <= 1500, "BuygowToken: Amount is greater than maximum purchase of 1500 busd");
         require(MAX_TOKEN_CAP > 0, "Private Sales token is not available");
-        require(gowToken.balanceOf(_msgSender()) <= 25000 * 1e17, "You have already purchased approved tokens limit per wallet");
-        uint256 amount = _amount * 1e17;
+        require(gowToken.balanceOf(_msgSender()) <= 25000 * 1e18, "You have already purchased approved tokens limit per wallet");
+        uint256 amount = _amount * 1e18;
         require(busd.transferFrom(_msgSender(), receiverWallet, amount), "BuygowToken: Payment failed"); // collect payment and send token
         
-        uint tokenCalculator = amount * 1e17 / tokenPrice;
+        uint tokenCalculator = amount * 1e18 / tokenPrice;
         require(gowToken.transfer(_msgSender(), tokenCalculator), "BuygowToken: Token transfer failed"); 
         MAX_TOKEN_CAP = MAX_TOKEN_CAP - tokenCalculator;
 

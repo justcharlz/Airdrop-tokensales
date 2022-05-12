@@ -28,7 +28,7 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
     }
 
     constructor(uint _initialSupply) ERC20("GOWToken", "GOW") {
-        _mint(_msgSender(), _initialSupply * 1e17);
+        _mint(_msgSender(), _initialSupply * 1e18);
     }
 
     function addAdmins(address _addr) public onlyOwner{
