@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.7;
 
-
 // Total Supply - 4,500,000 GOW
 // Full Unlocking Period - TGE - 6 Months
 // Unlocking Schedule - 5% (95%) 1st Month 5%, 2nd 5%, 3rd 10%, 4th 15%, 5th 25%, 6th 35%.
@@ -27,7 +26,6 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
     uint public vestingPeriodCount = 0;
     uint256 countBuyers = 0;
     uint256 MAX_TOKEN_CAP = 45 * 1e6 * 1e17;
-    uint public currentTime = block.timestamp;
 
     mapping(uint => tokenHolder) public crowdsaleWhitelist;
     mapping(uint => tokenHolderVesting) public vestingPeriod;
@@ -37,7 +35,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
         uint tokenClaimable;
         bool vestingClaimed;
     }
-
+    
     struct tokenHolderVesting{
         uint vestingEnd;
         uint vestingCreated;
@@ -69,11 +67,11 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
 
         tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false);
         crowdsaleWhitelist[countBuyers] = holder;
-        gowToken.addTokenHolders(_msgSender(), tokenCalculator * 5/100, true, block.timestamp, block.timestamp, false); // send 7% of the tokens to the buyer
+        gowToken.firstBuyTokenHolder(_msgSender(), tokenCalculator * 5/100, true, block.timestamp, block.timestamp, false); // send 7% of the tokens to the buyer
 
         for(uint i = 0; i < vestingPeriodCount; i++) {
         uint256 tokenRedeemable = tokenCalculator * vestingPeriod[i+1].releaseAmount / 100;
-        gowToken.addTokenHolders(_msgSender(), tokenRedeemable, false, block.timestamp, 0, false);
+        gowToken.addTokenHolders(_msgSender(), i+1, tokenRedeemable, false, block.timestamp, 0, false);
         }
         countBuyers++;
 
@@ -109,7 +107,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
     * @param _unlockSchedule The index unlock schedule of token(1,2,3,4,5).
     */
     function releaseVestedToken(uint _unlockSchedule) public onlyOwner returns(bool){
-        require(vestingPeriodCount <= _unlockSchedule, "ReleasaeSchedule: Schedule index not created");
+        require(_unlockSchedule <= vestingPeriodCount, "ReleasaeSchedule: Schedule index not created");
         vestingPeriod[_unlockSchedule].released = true;
         for (uint256 i = 0; i < countBuyers; i++) {
         address user = crowdsaleWhitelist[i].tokenHolder;
