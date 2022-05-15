@@ -6,7 +6,7 @@ typechain
 contracts/Busd.sol
 contracts/GowToken.sol
 contracts/interfaces/IgowToken.sol
-contracts/SecondPrivate
+contracts/SecondPrivate.sol
 contracts/FirstPrivate.sol
 contracts/Airdrop.sol
 
