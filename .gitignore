@@ -4,6 +4,10 @@ coverage
 coverage.json
 typechain
 contracts/busd.sol
+contracts/GowToken.sol
+contracts/interfaces/IgowToken.sol
+contracts/SecondPrivate.sol
+contracts/Airdrop.sol
 
 #Hardhat files
 cache
