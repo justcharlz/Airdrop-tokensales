@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "pwa-chrome",
+            "name": "http:///opt/homebrew/opt/redis/bin/redis-server /opt/homebrew/etc/redis.conf",
+            "request": "launch",
+            "url": "http:///opt/homebrew/opt/redis/bin/redis-server /opt/homebrew/etc/redis.conf"
+        }
+    ]
+}

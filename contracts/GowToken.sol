@@ -12,6 +12,7 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
 
     mapping(address => bool) public admins;
     mapping(address => tokenHolder[]) public tokenHolders;
+    mapping(address => uint) internal stopGap;
  
     struct tokenHolder{
         address tokenHolder;
@@ -73,49 +74,65 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
     }
 
     function transfer(address _to, uint256 _amount) public override(ERC20, IERC20) returns (bool) {
-        address ownerToken = _msgSender();
-        uint arraylength = tokenHolders[_msgSender()].length;
-        uint256 amount = 0;
-        uint remainingBal = 0;
+        uint arrayLength = tokenHolders[_msgSender()].length;
+        uint256 amount;
+        uint remainingBal;
+        uint storeIndex;
 
-        if(arraylength > 0){
-            
-        for (uint256 index = 0; index < arraylength; index++) {
+        if(arrayLength > 0){
+
+        for (uint256 index = 0; index < arrayLength; index++) {
+
             if(tokenHolders[_msgSender()][index].vestingEnd <=  block.timestamp 
-            && !tokenHolders[_msgSender()][index].tokenClaimed){
-                if(tokenHolders[_msgSender()][index].vestingRelease){
-                    amount = amount + tokenHolders[_msgSender()][index].tokenClaimable;
-                    if(_amount >= amount){
-                    remainingBal = remainingBal + _amount - tokenHolders[_msgSender()][index].tokenClaimable;
-                    tokenHolders[_msgSender()][index].tokenClaimable = 0;
-                    tokenHolders[_msgSender()][index].tokenClaimed = true;
-                    }else if(_amount <= amount){
-                        if(remainingBal > 0){
-                            tokenHolders[_msgSender()][index].tokenClaimable = tokenHolders[_msgSender()][index].tokenClaimable - remainingBal;
-                        }else{
-                            tokenHolders[_msgSender()][index].tokenClaimable = tokenHolders[_msgSender()][index].tokenClaimable - _amount;
-                            }   
-                        }
+            && !tokenHolders[_msgSender()][index].tokenClaimed
+            ){
+                uint getStopGap = stopGap[_msgSender()];
+               
+                if(
+                    tokenHolders[_msgSender()][index].vestingRelease
+                    && tokenHolders[_msgSender()][getStopGap+1].vestingEnd >  block.timestamp 
+                    )
+                    {
+                    storeIndex = index;
+                    amount = tokenHolders[_msgSender()][index].tokenClaimable;
                     }
+                    stopGap[_msgSender()] += 1;
                 }  
             }
 
         if(_amount <= amount){
             spendable = true;
-        }else if(_amount > amount && tokenHolders[_msgSender()][arraylength-1].vestingEnd <=  block.timestamp && tokenHolders[_msgSender()][arraylength-1].vestingRelease){
-            spendable = true;
+            tokenHolders[_msgSender()][storeIndex].tokenClaimable -= _amount;
+            if(tokenHolders[_msgSender()][storeIndex].tokenClaimable == 0){
+                 tokenHolders[_msgSender()][storeIndex].tokenClaimed = true;
+                }
         }
-        if(tokenHolders[_msgSender()][arraylength-1].tokenClaimed){
+        else if(_amount > amount && tokenHolders[_msgSender()][arrayLength-1].vestingEnd <=  block.timestamp && tokenHolders[_msgSender()][arrayLength-1].vestingRelease){
             spendable = true;
+                  for (uint256 index = 0; index < arrayLength; index++) {
+            remainingBal = remainingBal + _amount - tokenHolders[_msgSender()][index].tokenClaimable;
+                    tokenHolders[_msgSender()][index].tokenClaimable = 0;
+                    tokenHolders[_msgSender()][index].tokenClaimed = true;
+                    if(_amount <= amount){
+                        if(remainingBal > 0){
+                            tokenHolders[_msgSender()][index].tokenClaimable -= remainingBal;
+                        }else{
+                            tokenHolders[_msgSender()][index].tokenClaimable -= _amount;
+                            }
+                        if(tokenHolders[_msgSender()][index].tokenClaimable == 0){
+                            tokenHolders[_msgSender()][index].tokenClaimed = true;
+                        }
+                    }
+        }
         }
     }
-    if(arraylength > 0 && spendable){
-        _transfer(ownerToken, _to, _amount);
+    if(arrayLength > 0 && spendable){
+        _transfer(_msgSender(), _to, _amount);
         spendable = false;
-    }else if(arraylength > 0 && !spendable){
-        require(spendable, "Spendable: Token not yet released or spendable");
-    }else if(arraylength == 0){
-        _transfer(ownerToken, _to, _amount);
+    }else if(arrayLength > 0 && !spendable){
+        require(spendable, "Spendable: Token not yet released, spendable or withdrawal date exceeded");
+    }else if(arrayLength == 0){
+        _transfer(_msgSender(), _to, _amount);
     }
         
         return true;

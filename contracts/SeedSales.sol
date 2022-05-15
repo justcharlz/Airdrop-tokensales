@@ -11,7 +11,8 @@ import "./interfaces/IgowToken.sol";
 contract SeedSales is Ownable, Pausable, ReentrancyGuard {
 
     IgowToken gowToken;
-    IERC20 public immutable busd = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
+    // IERC20 public immutable busd = IERC20(0xd9145CCE52D386f254917e481eB44e9943F39138);
+    IERC20 public busd;
     address public constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
     uint tokenPrice = 0.04 * 1e18;
     uint public vestingPeriodCount = 0;
@@ -34,8 +35,9 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
         bool released;
     }
 
-    constructor(address _gowToken){
+    constructor(address _gowToken, address _busd){
         gowToken = IgowToken(_gowToken);
+        busd = IERC20(_busd);
     }
 
     event TransferReceived(address indexed _from, uint256 _amount);
@@ -62,7 +64,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
 
         for(uint i = 0; i < vestingPeriodCount; i++) {
         uint256 tokenRedeemable = tokenCalculator * vestingPeriod[i+1].releaseAmount / 100;
-        gowToken.addTokenHolders(_msgSender(), i+1, tokenRedeemable, false, block.timestamp, 0, false);
+        gowToken.addTokenHolders(_msgSender(), i+1, tokenRedeemable, false, block.timestamp, vestingPeriod[i+1].vestingEnd, false);
         }
         countBuyers++;
 
