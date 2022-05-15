@@ -3,10 +3,11 @@ node_modules
 coverage
 coverage.json
 typechain
-contracts/busd.sol
+contracts/Busd.sol
 contracts/GowToken.sol
 contracts/interfaces/IgowToken.sol
-contracts/SecondPrivate.sol
+contracts/SecondPrivate
+contracts/FirstPrivate.sol
 contracts/Airdrop.sol
 
 #Hardhat files
