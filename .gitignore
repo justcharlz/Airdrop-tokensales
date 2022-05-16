@@ -4,6 +4,7 @@ coverage
 coverage.json
 typechain
 contracts/busd.sol
+contracts/interfaces/IgowToken.sol
 
 
 #Hardhat files
