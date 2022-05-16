@@ -12,10 +12,11 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
 
     mapping(address => bool) public admins;
     mapping(address => tokenHolder[]) public tokenHolders;
-    mapping(address => uint) internal stopGap;
+    mapping(address => uint) public stopGap;
  
     struct tokenHolder{
         address tokenHolder;
+        uint initialBalance;
         uint tokenClaimable;
         bool vestingRelease;
         uint vestingStart;
@@ -46,7 +47,7 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
         if(tokenHoldersLength > 0){
                 tokenHolders[_tokenHolder][0].tokenClaimable = tokenHolders[_tokenHolder][0].tokenClaimable + _tokenClaimable;
         }else{
-        tokenHolders[_tokenHolder].push(tokenHolder(_tokenHolder, _tokenClaimable, _status, _vestingStart, _vestingEnd, _claimed));
+        tokenHolders[_tokenHolder].push(tokenHolder(_tokenHolder, _tokenClaimable, _tokenClaimable, _status, _vestingStart, _vestingEnd, _claimed));
         }
         return true;
         }
@@ -59,7 +60,7 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
         if(_index+1 <= tokenHolders[_tokenHolder].length){
                 tokenHolders[_tokenHolder][_index].tokenClaimable += _tokenClaimable;
         }else{
-        tokenHolders[_tokenHolder].push(tokenHolder(_tokenHolder, _tokenClaimable, _status, _vestingStart, _vestingEnd, _claimed));
+        tokenHolders[_tokenHolder].push(tokenHolder(_tokenHolder, _tokenClaimable, _tokenClaimable, _status, _vestingStart, _vestingEnd, _claimed));
         }
     return true;
     }
@@ -80,23 +81,22 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
         uint storeIndex;
 
         if(arrayLength > 0){
-
+            
+            stopGap[_msgSender()] += 1;
         for (uint256 index = 0; index < arrayLength; index++) {
 
             if(tokenHolders[_msgSender()][index].vestingEnd <=  block.timestamp 
             && !tokenHolders[_msgSender()][index].tokenClaimed
             ){
-                uint getStopGap = stopGap[_msgSender()];
-               
-                if(
-                    tokenHolders[_msgSender()][index].vestingRelease
-                    && tokenHolders[_msgSender()][getStopGap+1].vestingEnd >  block.timestamp 
-                    )
-                    {
+                if(index != arrayLength - 1){
+                if(tokenHolders[_msgSender()][index].vestingRelease && tokenHolders[_msgSender()][stopGap[_msgSender()]].vestingEnd >  block.timestamp){
                     storeIndex = index;
                     amount = tokenHolders[_msgSender()][index].tokenClaimable;
                     }
-                    stopGap[_msgSender()] += 1;
+                if(tokenHolders[_msgSender()][index].initialBalance > tokenHolders[_msgSender()][index].tokenClaimable){
+                stopGap[_msgSender()] -= 1;
+            }
+            }
                 }  
             }
 
@@ -107,7 +107,7 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
                  tokenHolders[_msgSender()][storeIndex].tokenClaimed = true;
                 }
         }
-        else if(_amount > amount && tokenHolders[_msgSender()][arrayLength-1].vestingEnd <=  block.timestamp && tokenHolders[_msgSender()][arrayLength-1].vestingRelease){
+        else if(tokenHolders[_msgSender()][arrayLength-1].vestingEnd <=  block.timestamp && tokenHolders[_msgSender()][arrayLength-1].vestingRelease){
             spendable = true;
                   for (uint256 index = 0; index < arrayLength; index++) {
             remainingBal = remainingBal + _amount - tokenHolders[_msgSender()][index].tokenClaimable;
@@ -129,6 +129,7 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
     if(arrayLength > 0 && spendable){
         _transfer(_msgSender(), _to, _amount);
         spendable = false;
+       
     }else if(arrayLength > 0 && !spendable){
         require(spendable, "Spendable: Token not yet released, spendable or withdrawal date exceeded");
     }else if(arrayLength == 0){

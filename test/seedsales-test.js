@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers, BigNumber } = require("hardhat");
 
-describe("Contracts Deployment and E2E test", function () {
+describe("SeedSales E2E test", function () {
   let busd, gowToken, seedSales, buyer, timestamp;
   accounts = [];
   let wait;
@@ -11,6 +11,7 @@ describe("Contracts Deployment and E2E test", function () {
     admin = accounts[0];
     buyer = accounts[1];
     tokenReceiver = accounts[2];
+    secondtokenReceiver = accounts[3];
 
    await ethers.provider.getBlockNumber().then(function(blockNumber) {
       ethers.provider.getBlock(blockNumber).then(function(block) {
@@ -53,7 +54,7 @@ describe("Contracts Deployment and E2E test", function () {
   it("Should create vesting period", async function () {
     const vestingPeriodOne = await seedSales.setVestingPeriod("1", "20", "3");
     const vestingPeriodTwo = await seedSales.setVestingPeriod("2", "40", "6");
-    const vestingPeriodThree = await seedSales.setVestingPeriod("3", "50", "9");
+    const vestingPeriodThree = await seedSales.setVestingPeriod("3", "60", "9");
     vestingPeriodOne.wait();
     vestingPeriodTwo.wait();
     vestingPeriodThree.wait();
@@ -90,15 +91,19 @@ describe("Contracts Deployment and E2E test", function () {
   })
 
   it("Should allow user withdraw first vested tokens", async function () {
+    const stopGap = await gowToken.stopGap(buyer.address);
+    // console.log('StopGap>>>',stopGap);
 
     const withdrawFirstVestedTokens = await gowToken.connect(buyer).transfer(tokenReceiver.address, ethers.utils.parseUnits((60 / 0.04 * 3/100).toString(), "ether"));
     withdrawFirstVestedTokens.wait();
     const withdrawFirstVestedTokens2 = await gowToken.connect(buyer).transfer(tokenReceiver.address, ethers.utils.parseUnits((60 / 0.04 * 2/100).toString(), "ether"));
     withdrawFirstVestedTokens2.wait();
-
+  
+    // console.log('StopGap>>>', await gowToken.stopGap(buyer.address));
     const tokenHolderBalance = await gowToken.tokenHolders(buyer.address, 0);
     expect(await gowToken.balanceOf(tokenReceiver.address)).to.equal(ethers.utils.parseUnits((60/0.04 * 5/100).toString(),"ether"));
     expect(await tokenHolderBalance.tokenClaimable).to.equal(0);
+    expect(await tokenHolderBalance.tokenClaimed).to.equal(true);
   })
 
   it("Should release vested tokens", async function () {
@@ -128,9 +133,13 @@ describe("Contracts Deployment and E2E test", function () {
     expect(await tokenHolderBalance.vestingRelease).to.equal(true);
     expect(await tokenHolderBalance1.vestingEnd.toNumber()).to.greaterThan(timestamp + 30);
     expect(Number(await tokenHolderBalance.tokenClaimable)).to.equal(Number(ethers.utils.parseUnits((60 / 0.04 * 3/100).toString(), "ether")));
+    // console.log('StopGap>>>',await gowToken.stopGap(buyer.address));
 
     const withdrawSecondVestedTokens = await gowToken.connect(buyer).transfer(tokenReceiver.address, ethers.utils.parseUnits((60 / 0.04 * 3/100).toString(), "ether"));
     withdrawSecondVestedTokens.wait();
+  
+    // console.log('StopGap>>>', await gowToken.stopGap(buyer.address));
+
     const tokenHolderBalanceAfter = await gowToken.tokenHolders(buyer.address, 1);
     expect(await tokenHolderBalanceAfter.tokenClaimable).to.equal(0);
     expect(await tokenHolderBalanceAfter.tokenClaimed).to.equal(true);
@@ -139,7 +148,7 @@ describe("Contracts Deployment and E2E test", function () {
 
   it("Should allow user withdraw third vested tokens", async function () {
     this.timeout(timestamp + 3000);
-    await wait(1 * 30 * 1000);
+    await wait(1 * 20 * 1000);
 
     const tokenHolderBalance = await gowToken.tokenHolders(buyer.address, 2);
     const tokenHolderBalance1 = await gowToken.tokenHolders(buyer.address, 3);
@@ -148,13 +157,43 @@ describe("Contracts Deployment and E2E test", function () {
     expect(await tokenHolderBalance.vestingRelease).to.equal(true);
     expect(await tokenHolderBalance1.vestingEnd.toNumber()).to.greaterThan(timestamp);
     expect(Number(await tokenHolderBalance.tokenClaimable)).to.equal(Number(ethers.utils.parseUnits((60 / 0.04 * 6/100).toString(), "ether")));
+    // console.log('StopGap>>>', await gowToken.stopGap(buyer.address));
 
-    // const withdrawSecondVestedTokens = await gowToken.connect(buyer).transfer(tokenReceiver.address, ethers.utils.parseUnits((60 / 0.04 * 6/100).toString(), "ether"));
-    // withdrawSecondVestedTokens.wait();
-    // const tokenHolderBalanceAfter = await gowToken.tokenHolders(buyer.address, 1);
-    // expect(await tokenHolderBalanceAfter.tokenClaimable).to.equal(0);
-    // expect(await tokenHolderBalanceAfter.tokenClaimed).to.equal(true);
+    const withdrawSecondVestedTokens = await gowToken.connect(buyer).transfer(tokenReceiver.address, ethers.utils.parseUnits((60 / 0.04 * 6/100).toString(), "ether"));
+    withdrawSecondVestedTokens.wait();
+    // console.log('StopGap>>>', await gowToken.stopGap(buyer.address));
+    const tokenHolderBalanceAfter = await gowToken.tokenHolders(buyer.address, 2);
+    expect(await tokenHolderBalanceAfter.tokenClaimable).to.equal(0);
+    expect(await tokenHolderBalanceAfter.tokenClaimed).to.equal(true);
 
+  })
+
+  it("Should allow user withdraw fourth vested tokens", async function () {
+    this.timeout(timestamp + 3000);
+    await wait(1 * 20 * 1000);
+
+    const tokenHolderBalance = await gowToken.tokenHolders(buyer.address, 3);
+    // const tokenHolderBalance1 = await gowToken.tokenHolders(buyer.address, 3);
+    expect(await tokenHolderBalance.vestingEnd.toNumber()).to.lessThanOrEqual(timestamp + 50);
+    expect(await tokenHolderBalance.tokenClaimed).to.equal(false);
+    expect(await tokenHolderBalance.vestingRelease).to.equal(true);
+    // expect(await tokenHolderBalance1.vestingEnd.toNumber()).to.greaterThan(timestamp);
+    expect(Number(await tokenHolderBalance.tokenClaimable)).to.equal(Number(ethers.utils.parseUnits((60 / 0.04 * 9/100).toString(), "ether")));
+    // console.log('StopGap>>>', await gowToken.stopGap(buyer.address));
+
+    const withdrawFourthVestedTokens = await gowToken.connect(buyer).transfer(tokenReceiver.address, ethers.utils.parseUnits((60 / 0.04 * 9/100).toString(), "ether"));
+    withdrawFourthVestedTokens.wait();
+    // console.log('StopGap>>>', await gowToken.stopGap(buyer.address));
+    const tokenHolderBalanceAfter = await gowToken.tokenHolders(buyer.address, 3);
+    expect(await tokenHolderBalanceAfter.tokenClaimable).to.equal(0);
+    expect(await tokenHolderBalanceAfter.tokenClaimed).to.equal(true);
+
+  })
+
+  it("Should allow user withdraw tokens", async function () {
+    const transferToken = await gowToken.connect(buyer).transfer(secondtokenReceiver.address, ethers.utils.parseUnits((50).toString(), "ether"));
+    transferToken.wait();
+    expect(await gowToken.balanceOf(secondtokenReceiver.address)).to.equal(ethers.utils.parseUnits((50).toString(), "ether"));
   })
 
 });

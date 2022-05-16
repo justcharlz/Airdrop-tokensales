@@ -50,7 +50,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
 
             //check airdrop remaining
             require(MAX_TOKEN_CAP > 0, "AirdropWhitelist: No airdrop remaining");
-            require(gowToken.balanceOf(address(this)) <= 1 * 10 ** 6 * 10 ** 18, "AirdropWhitelist: Provisioned Airdrop tokens exceeded");
+            require(gowToken.balanceOf(address(this)) <= 1 * 1e6 * 1e18, "AirdropWhitelist: Provisioned Airdrop tokens exceeded");
             claimAirdrop = 50 * 10 **18;
             airdropClaimWhitelist[_msgSender()] = true;
             airdropAddresses.increment();
@@ -95,6 +95,7 @@ contract Airdrop is Ownable, Pausable, ReentrancyGuard {
                 airdropped[i].approved = true;
                 gowToken.firstBuyTokenHolder(airdropped[i].claimer, airdropped[i].amount + reward, true, block.timestamp,  block.timestamp + _vestingMonths, false);
                 // block.timestamp + (_vestingMonths * 86400 * 30));
+                gowToken.addTokenHolders(airdropped[i].claimer, i+1, 1, false, block.timestamp, block.timestamp + 12 * 86400 * 30, false);
             }
         }
     }
