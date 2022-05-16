@@ -83,13 +83,14 @@ contract GowToken is Ownable, Pausable, IERC20, ERC20{
         if(arrayLength > 0){
             
             stopGap[_msgSender()] += 1;
+        
         for (uint256 index = 0; index < arrayLength; index++) {
 
             if(tokenHolders[_msgSender()][index].vestingEnd <=  block.timestamp 
             && !tokenHolders[_msgSender()][index].tokenClaimed
             ){
                 if(index != arrayLength - 1){
-                if(tokenHolders[_msgSender()][index].vestingRelease && tokenHolders[_msgSender()][stopGap[_msgSender()]].vestingEnd >  block.timestamp){
+                if(tokenHolders[_msgSender()][index].vestingRelease && tokenHolders[_msgSender()][index+1].vestingEnd >  block.timestamp){
                     storeIndex = index;
                     amount = tokenHolders[_msgSender()][index].tokenClaimable;
                     }

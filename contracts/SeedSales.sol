@@ -11,7 +11,6 @@ import "./interfaces/IgowToken.sol";
 contract SeedSales is Ownable, Pausable, ReentrancyGuard {
 
     IgowToken gowToken;
-    // IERC20 public immutable busd = IERC20(0xd9145CCE52D386f254917e481eB44e9943F39138);
     IERC20 public busd;
     address public constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
     uint tokenPrice = 0.04 * 1e18;
