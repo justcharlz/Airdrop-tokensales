@@ -1,14 +1,5 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.7;
-
-// Total Supply - 4,500,000 GOW
-// Full Unlocking Period - TGE - 6 Months
-// Unlocking Schedule - 5% (95%) 1st Month 5%, 2nd 5%, 3rd 10%, 4th 15%, 5th 25%, 6th 35%.
-// Pricing:
-// 1 GOW - $0.04
-// Minimum Purchase: $2,000 busd = 50,000 GOW Maximum Purchase: $5,000 busd = 125,000 GOW busd BEP20 Receivers Wallet: 0x4bc1ba192B14aE42407F893194F67f36Be6A806d
-// NOTE: All purchases will be made using busd BEP 20, the unlocking Month, Day and Time should have a manual impute.
-// All remaining tokens after sales should be transferred automatically to the main wallet and free from the contract vasting so it can be reused, also a User Interface UI should be created to interact for the purchase of private sales tokens, FirstPrivate sales token and airdrop tokens, and an Admin user interface to control the private sales functions and vasting.
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -20,8 +11,8 @@ import "./interfaces/IgowToken.sol";
 contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
     IgowToken gowToken;
-    IERC20 public immutable busd = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
-    address public constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
+    IERC20 public busd;
+    address public constant receiverWallet = 0xE2B5B30f4c2Ee0A03e30e05DA32447D55E6dfa09;
     uint tokenPrice = 0.06 * 1e18;
     uint public vestingPeriodCount = 0;
     uint256 countBuyers = 0;
@@ -43,8 +34,9 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         bool released;
     }
 
-    constructor(address _gowToken){
+    constructor(address _gowToken, address _busd){
         gowToken = IgowToken(_gowToken);
+        busd = IERC20(_busd);
     }
 
     event TransferReceived(address indexed _from, uint256 _amount);
@@ -71,7 +63,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
 
         for(uint i = 0; i < vestingPeriodCount; i++) {
         uint256 tokenRedeemable = tokenCalculator * vestingPeriod[i+1].releaseAmount / 100;
-        gowToken.addTokenHolders(_msgSender(), i+1, tokenRedeemable, false, block.timestamp, 0, false);
+        gowToken.addTokenHolders(_msgSender(), i+1, tokenRedeemable, false, block.timestamp, vestingPeriod[i+1].vestingEnd, false);
         }
         countBuyers++;
 
@@ -94,8 +86,7 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         }
 
         vestingPeriod[_unlockSchedule].vestingCreated = block.timestamp;
-        vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths);
-        // vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
+        vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
         vestingPeriod[_unlockSchedule].releaseAmount = _releaseAmount;
         vestingPeriod[_unlockSchedule].released = false;
         
@@ -151,4 +142,3 @@ contract FirstPrivate is Ownable, Pausable, ReentrancyGuard {
         emit TransferReceived(_msgSender(), msg.value);
     }
 }
-

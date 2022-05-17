@@ -12,11 +12,11 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
 
     IgowToken gowToken;
     IERC20 public busd;
-    address public constant receiverWallet = 0xdF70554afD4baA101Cde0C987ba4aDF9Ea60cA5E;
+    address public constant receiverWallet = 0x4bc1ba192B14aE42407F893194F67f36Be6A806d;
     uint tokenPrice = 0.04 * 1e18;
     uint public vestingPeriodCount = 0;
     uint256 countBuyers = 0;
-    uint256 MAX_TOKEN_CAP = 45 * 1e6 * 1e18;
+    uint256 MAX_TOKEN_CAP = 45 * 1e5 * 1e18;
 
     mapping(uint => tokenHolder) public crowdsaleWhitelist;
     mapping(uint => tokenHolderVesting) public vestingPeriod;
@@ -46,10 +46,10 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
 
     function buygowToken(uint256 _amount) public payable whenNotPaused {
         require(vestingPeriodCount > 0, "Vesting period not created");
-        require(_amount >= 50, "BuygowToken: Amount is less than required purchase of 50 busd");
-        require(_amount <= 1500, "BuygowToken: Amount is greater than maximum purchase of 1500 busd");
+        require(_amount >= 2000, "BuygowToken: Amount is less than required purchase of 50 busd");
+        require(_amount <= 5000, "BuygowToken: Amount is greater than maximum purchase of 1500 busd");
         require(MAX_TOKEN_CAP > 0, "Private Sales token is not available");
-        require(gowToken.balanceOf(_msgSender()) <= 25000 * 1e18, "You have already purchased approved tokens limit per wallet");
+        require(gowToken.balanceOf(_msgSender()) <= 125000 * 1e18, "You have already purchased approved tokens limit per wallet");
         uint256 amount = _amount * 1e18;
         require(busd.transferFrom(_msgSender(), receiverWallet, amount), "BuygowToken: Payment failed"); // collect payment and send token
         
@@ -86,8 +86,7 @@ contract SeedSales is Ownable, Pausable, ReentrancyGuard {
         }
 
         vestingPeriod[_unlockSchedule].vestingCreated = block.timestamp;
-        vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths);
-        // vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
+        vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
         vestingPeriod[_unlockSchedule].releaseAmount = _releaseAmount;
         vestingPeriod[_unlockSchedule].released = false;
         

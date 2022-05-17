@@ -11,12 +11,12 @@ import "./interfaces/IgowToken.sol";
 contract SecondPrivate is Ownable, Pausable, ReentrancyGuard {
 
     IgowToken gowToken;
-    IERC20 public immutable busd = IERC20(0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee);
+    IERC20 public busd;
     address public constant receiverWallet = 0x21e4E034B607bbb84bb5548c521EA249A8Ee028F;
     uint tokenPrice = 0.075 * 1e18;
     uint public vestingPeriodCount = 0;
     uint256 countBuyers = 0;
-    uint256 MAX_TOKEN_CAP = 35 * 1e6 * 1e18;
+    uint256 MAX_TOKEN_CAP = 35 * 1e5 * 1e18;
 
     mapping(uint => tokenHolder) public crowdsaleWhitelist;
     mapping(uint => tokenHolderVesting) public vestingPeriod;
@@ -34,8 +34,9 @@ contract SecondPrivate is Ownable, Pausable, ReentrancyGuard {
         bool released;
     }
 
-    constructor(address _gowToken){
+    constructor(address _gowToken, address _busd){
         gowToken = IgowToken(_gowToken);
+        busd = IERC20(_busd);
     }
 
     event TransferReceived(address indexed _from, uint256 _amount);
@@ -48,7 +49,7 @@ contract SecondPrivate is Ownable, Pausable, ReentrancyGuard {
         require(_amount >= 50, "BuygowToken: Amount is less than required purchase of 50 busd");
         require(_amount <= 1500, "BuygowToken: Amount is greater than maximum purchase of 1500 busd");
         require(MAX_TOKEN_CAP > 0, "Private Sales token is not available");
-        require(gowToken.balanceOf(_msgSender()) <= 25000 * 1e18, "You have already purchased approved tokens limit per wallet");
+        require(gowToken.balanceOf(_msgSender()) <= 20000 * 1e18, "You have already purchased approved tokens limit per wallet");
         uint256 amount = _amount * 1e18;
         require(busd.transferFrom(_msgSender(), receiverWallet, amount), "BuygowToken: Payment failed"); // collect payment and send token
         
@@ -58,11 +59,11 @@ contract SecondPrivate is Ownable, Pausable, ReentrancyGuard {
 
         tokenHolder memory holder = tokenHolder(_msgSender(), tokenCalculator, false);
         crowdsaleWhitelist[countBuyers] = holder;
-        gowToken.firstBuyTokenHolder(_msgSender(), tokenCalculator * 10/100, true, block.timestamp, block.timestamp, false); // send 10% of the tokens to the buyer
+        gowToken.firstBuyTokenHolder(_msgSender(), tokenCalculator * 10/100, true, block.timestamp, block.timestamp, false); // send 7% of the tokens to the buyer
 
         for(uint i = 0; i < vestingPeriodCount; i++) {
         uint256 tokenRedeemable = tokenCalculator * vestingPeriod[i+1].releaseAmount / 100;
-        gowToken.addTokenHolders(_msgSender(), i+1, tokenRedeemable, false, block.timestamp, 0, false);
+        gowToken.addTokenHolders(_msgSender(), i+1, tokenRedeemable, false, block.timestamp, vestingPeriod[i+1].vestingEnd, false);
         }
         countBuyers++;
 
@@ -85,8 +86,7 @@ contract SecondPrivate is Ownable, Pausable, ReentrancyGuard {
         }
 
         vestingPeriod[_unlockSchedule].vestingCreated = block.timestamp;
-        vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths);
-        // vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
+        vestingPeriod[_unlockSchedule].vestingEnd = block.timestamp + (_vestingMonths * 86400 * 30);
         vestingPeriod[_unlockSchedule].releaseAmount = _releaseAmount;
         vestingPeriod[_unlockSchedule].released = false;
         
