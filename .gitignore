@@ -4,11 +4,11 @@ coverage
 coverage.json
 typechain
 contracts/Busd.sol
-contracts/GowToken.sol
-contracts/interfaces/IgowToken.sol
-contracts/SecondPrivate.sol
-contracts/FirstPrivate.sol
-contracts/Airdrop.sol
+#contracts/GowToken.sol
+#contracts/interfaces/IgowToken.sol
+#contracts/SecondPrivate.sol
+#contracts/FirstPrivate.sol
+#contracts/Airdrop.sol
 
 #Hardhat files
 cache
